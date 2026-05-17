@@ -38,6 +38,13 @@ New migration `0002_addendum.sql`:
 - `characters` (plaintext `refresh_token TEXT NOT NULL`),
   `tracked_stations`, `tracked_types`.
 
+## 2026-05-17 — Phase 5a
+
+- **`market_orders_current.region_id` and `market_orders_snapshots.region_id` are NULLABLE.** PROMPT.md §5.4 had them NOT NULL with the implicit assumption that a single HUB_STRUCTURE_ID resolved to a region. ADDENDUM.md §2's multi-station model means we poll `/markets/structures/{id}/` for an arbitrary list of structures; ESI's structure-markets payload doesn't include region context, and looking it up per structure on every cycle would cost extra calls. Reports filter station rows by `location_id` and region rows by `region_id`, so NULL on structure rows is fine.
+- **`snapshot_runs.location_id` column added.** PROMPT.md §5.5 has only `source`; under ADDENDUM.md §2 a hub cycle produces N rows (one per `tracked_stations.station_id`). `location_id` records which station / region the row is about so the operator can see "this station's poll failed."
+- **`snapshot_runs.orders_kept` added next to `orders_seen`.** The whitelist filter drops most orders; recording both numbers tells you whether ESI returned data at all vs. whether the whitelist excluded everything.
+- **Partitions of `market_orders_snapshots` are created at runtime, not in the migration.** Weekly partitions are time-bound; the migration sets up the parent only, and `ensure_partitions` in `src/snapshot/mod.rs` creates the current + next week's partitions on demand (and is invoked before each poll cycle).
+
 ## 2026-05-17 — Phase 3b
 
 - **Pinned `oauth2 = "5"`, not `"4"`.** PROMPT.md §2 doesn't pin a

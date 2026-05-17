@@ -3,6 +3,7 @@ pub mod db;
 pub mod error;
 pub mod esi;
 pub mod sde;
+pub mod snapshot;
 pub mod telemetry;
 
 pub use config::Config;
