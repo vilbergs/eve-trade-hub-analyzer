@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: eve-hub-postgres
+    environment:
+      POSTGRES_USER: eve
+      POSTGRES_PASSWORD: eve
+      POSTGRES_DB: eve_hub
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - eve_hub_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eve -d eve_hub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  eve_hub_pgdata:
