@@ -1,5 +1,5 @@
 use clap::Parser;
-use eve_trade_hub_analyzer::{Config, telemetry};
+use eve_trade_hub_analyzer::{Config, db, sde, telemetry};
 
 /// Download the latest Fuzzwork SDE CSVs and load type/group/market-group tables.
 #[derive(Parser, Debug)]
@@ -13,8 +13,42 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     telemetry::init();
-    let _args = Args::parse();
-    let _config = Config::from_env()?;
-    tracing::warn!("sde-sync not yet implemented (Phase 1)");
+    let args = Args::parse();
+    let config = Config::from_env()?;
+    let pool = db::build_pool(&config).await?;
+    let http = reqwest::Client::builder()
+        .user_agent(&config.eve_user_agent)
+        .gzip(true)
+        .build()?;
+
+    if args.force {
+        // Clear the version row so sync proceeds even on an unchanged upstream.
+        sqlx::query("DELETE FROM eve_sde_meta WHERE id = 1")
+            .execute(&pool)
+            .await?;
+    }
+
+    match sde::sync(&pool, &http).await? {
+        sde::SdeReport::UpToDate { version } => {
+            tracing::info!(%version, "SDE up to date");
+        }
+        sde::SdeReport::Loaded {
+            version,
+            categories,
+            groups,
+            market_groups,
+            types,
+        } => {
+            tracing::info!(
+                %version,
+                categories,
+                groups,
+                market_groups,
+                types,
+                "SDE loaded"
+            );
+        }
+    }
+
     Ok(())
 }
