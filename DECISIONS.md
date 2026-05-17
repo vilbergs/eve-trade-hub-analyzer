@@ -16,6 +16,10 @@ Running log of choices that deviate from `PROMPT.md` or that resolved an ambigui
 - **`reqwest` configured with `default-features = false`** plus `rustls-tls`, `json`, `gzip` to avoid pulling in `native-tls` / OpenSSL.
 - **`oauth2` configured with `default-features = false`** plus `reqwest` and `rustls-tls` for the same reason.
 
+## 2026-05-17 — Phase 2
+
+- **Added `futures` as a dependency.** For `futures::stream::iter().buffer_unordered(4)` in the ESI pagination helper. The spec mandates "all pages concurrently up to a small bound (4 in flight)" and `buffer_unordered` is the idiomatic, well-tested primitive; the alternatives (hand-rolled `JoinSet` + `Semaphore`, or `chunks(4)` round-trips) are uglier and serialize within a chunk.
+
 ## 2026-05-17 — Phase 1
 
 - **Download 5 Fuzzwork CSVs, not 4.** `invTypes.csv` does not include `packagedVolume`; that field comes from `invVolumes.csv`. The §5.2 schema requires `packaged_volume NOT NULL` and Phase 7's seeding report depends on it for haul-cost math. We download `invVolumes.csv` too and `coalesce(invVolumes.volume, invTypes.volume)` so types with no override get their unpackaged volume as a fallback. §7 Phase 1 step 2.iii says 4 CSVs; the 5th is the minimal addition that lets the schema and downstream math be honest.

@@ -668,6 +668,7 @@ dependencies = [
  "clap",
  "comfy-table",
  "dotenvy",
+ "futures",
  "jsonwebtoken",
  "oauth2",
  "rand 0.8.6",

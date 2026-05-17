@@ -52,6 +52,7 @@ rand = "0.8"
 base64 = "0.22"
 url = "2"
 sha2 = "0.10"
+futures = "0.3"
 
 [dev-dependencies]
 wiremock = "0.6"
