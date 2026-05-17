@@ -7,6 +7,7 @@
 //! `_with_auth` variant for endpoints that need a bearer token); typed
 //! endpoint wrappers live in submodules.
 
+pub mod auth;
 pub mod client;
 pub mod market;
 
