@@ -12,10 +12,6 @@ name = "auth"
 path = "src/bin/auth.rs"
 
 [[bin]]
-name = "discover"
-path = "src/bin/discover.rs"
-
-[[bin]]
 name = "sde-sync"
 path = "src/bin/sde_sync.rs"
 
@@ -39,8 +35,7 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-r
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 jsonwebtoken = "9"
-oauth2 = { version = "4", default-features = false, features = ["reqwest", "rustls-tls"] }
-aes-gcm = "0.10"
+oauth2 = { version = "5", default-features = false, features = ["reqwest", "rustls-tls"] }
 dotenvy = "0.15"
 clap = { version = "4", features = ["derive", "env"] }
 tracing = "0.1"
@@ -48,8 +43,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"]
 comfy-table = "7"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1"
-rand = "0.8"
-base64 = "0.22"
 url = "2"
 sha2 = "0.10"
 futures = "0.3"

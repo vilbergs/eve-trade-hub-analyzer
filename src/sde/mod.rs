@@ -44,28 +44,18 @@ pub async fn sync(pool: &PgPool, http: &reqwest::Client) -> AppResult<SdeReport>
     let groups = fetch_bytes(http, &format!("{BASE_URL}/invGroups.csv")).await?;
     let market_groups = fetch_bytes(http, &format!("{BASE_URL}/invMarketGroups.csv")).await?;
     let types = fetch_bytes(http, &format!("{BASE_URL}/invTypes.csv")).await?;
-    let volumes = fetch_bytes(http, &format!("{BASE_URL}/invVolumes.csv")).await?;
     info!(
         categories = categories.len(),
         groups = groups.len(),
         market_groups = market_groups.len(),
         types = types.len(),
-        volumes = volumes.len(),
         "downloaded CSVs"
     );
 
     let mut tx = pool.begin().await?;
-    let counts = load_all(
-        &mut tx,
-        &categories,
-        &groups,
-        &market_groups,
-        &types,
-        &volumes,
-    )
-    .await?;
+    let counts = load_all(&mut tx, &categories, &groups, &market_groups, &types).await?;
     sqlx::query(
-        "INSERT INTO eve_sde_meta (id, version, loaded_at) \
+        "INSERT INTO sde_meta (id, version, loaded_at) \
          VALUES (1, $1, now()) \
          ON CONFLICT (id) DO UPDATE SET version = EXCLUDED.version, loaded_at = EXCLUDED.loaded_at",
     )
@@ -84,7 +74,7 @@ pub async fn sync(pool: &PgPool, http: &reqwest::Client) -> AppResult<SdeReport>
 }
 
 async fn current_version(pool: &PgPool) -> AppResult<Option<String>> {
-    let row: Option<(String,)> = sqlx::query_as("SELECT version FROM eve_sde_meta WHERE id = 1")
+    let row: Option<(String,)> = sqlx::query_as("SELECT version FROM sde_meta WHERE id = 1")
         .fetch_optional(pool)
         .await?;
     Ok(row.map(|r| r.0))
@@ -114,7 +104,7 @@ fn version_id(body: &str) -> String {
     let mut h = Sha256::new();
     h.update(body.as_bytes());
     let digest = h.finalize();
-    format!("sha256:{:x}", digest)
+    format!("sha256:{digest:x}")
 }
 
 struct Counts {
@@ -130,7 +120,6 @@ async fn load_all<'c>(
     groups_csv: &[u8],
     market_groups_csv: &[u8],
     types_csv: &[u8],
-    volumes_csv: &[u8],
 ) -> AppResult<Counts> {
     let conn = tx.acquire().await?;
 
@@ -197,27 +186,13 @@ async fn load_all<'c>(
     )
     .await?;
 
-    sqlx::query(
-        "CREATE TEMP TABLE tmp_volumes ( \
-            type_id TEXT, volume TEXT \
-        ) ON COMMIT DROP",
-    )
-    .execute(&mut *conn)
-    .await?;
-    copy_csv(
-        conn,
-        "COPY tmp_volumes FROM STDIN WITH (FORMAT csv, HEADER true)",
-        volumes_csv,
-    )
-    .await?;
-
     // 2. Wipe real tables in FK-safe order, then re-populate.
-    sqlx::query("TRUNCATE eve_types, eve_market_groups, eve_groups, eve_categories")
+    sqlx::query("TRUNCATE sde_types, sde_market_groups, sde_groups, sde_categories")
         .execute(&mut *conn)
         .await?;
 
     let categories = sqlx::query(
-        "INSERT INTO eve_categories (category_id, name, published) \
+        "INSERT INTO sde_categories (category_id, name, published) \
          SELECT category_id::BIGINT, name, to_bool(published) \
          FROM tmp_categories WHERE category_id IS NOT NULL AND category_id <> ''",
     )
@@ -226,11 +201,11 @@ async fn load_all<'c>(
     .rows_affected();
 
     let groups = sqlx::query(
-        "INSERT INTO eve_groups (group_id, category_id, name, published) \
+        "INSERT INTO sde_groups (group_id, category_id, name, published) \
          SELECT group_id::BIGINT, category_id::BIGINT, name, to_bool(published) \
          FROM tmp_groups \
          WHERE group_id IS NOT NULL AND group_id <> '' \
-           AND EXISTS (SELECT 1 FROM eve_categories c WHERE c.category_id = tmp_groups.category_id::BIGINT)",
+           AND EXISTS (SELECT 1 FROM sde_categories c WHERE c.category_id = tmp_groups.category_id::BIGINT)",
     )
     .execute(&mut *conn)
     .await?
@@ -238,14 +213,14 @@ async fn load_all<'c>(
 
     // Self-referential FK: insert with NULL parents first, then UPDATE.
     sqlx::query(
-        "INSERT INTO eve_market_groups (market_group_id, name, parent_id) \
+        "INSERT INTO sde_market_groups (market_group_id, name, parent_id) \
          SELECT market_group_id::BIGINT, name, NULL::BIGINT \
          FROM tmp_market_groups WHERE market_group_id IS NOT NULL AND market_group_id <> ''",
     )
     .execute(&mut *conn)
     .await?;
     let market_groups = sqlx::query(
-        "UPDATE eve_market_groups mg \
+        "UPDATE sde_market_groups mg \
          SET parent_id = NULLIF(NULLIF(t.parent_group_id, ''), 'None')::BIGINT \
          FROM tmp_market_groups t \
          WHERE mg.market_group_id = t.market_group_id::BIGINT \
@@ -257,9 +232,9 @@ async fn load_all<'c>(
     .rows_affected();
 
     let types = sqlx::query(
-        "INSERT INTO eve_types ( \
+        "INSERT INTO sde_types ( \
             type_id, name, group_id, market_group_id, \
-            volume, packaged_volume, published \
+            volume, published \
          ) \
          SELECT \
             t.type_id::BIGINT, \
@@ -267,17 +242,11 @@ async fn load_all<'c>(
             t.group_id::BIGINT, \
             NULLIF(NULLIF(t.market_group_id, ''), 'None')::BIGINT, \
             COALESCE(NULLIF(NULLIF(t.volume, ''), 'None')::DOUBLE PRECISION, 0), \
-            COALESCE( \
-                NULLIF(NULLIF(v.volume, ''), 'None')::DOUBLE PRECISION, \
-                NULLIF(NULLIF(t.volume, ''), 'None')::DOUBLE PRECISION, \
-                0 \
-            ), \
             to_bool(t.published) \
          FROM tmp_types t \
-         LEFT JOIN tmp_volumes v ON v.type_id = t.type_id \
          WHERE t.type_id IS NOT NULL AND t.type_id <> '' \
            AND t.group_id IS NOT NULL AND t.group_id <> '' \
-           AND EXISTS (SELECT 1 FROM eve_groups g WHERE g.group_id = t.group_id::BIGINT)",
+           AND EXISTS (SELECT 1 FROM sde_groups g WHERE g.group_id = t.group_id::BIGINT)",
     )
     .execute(&mut *conn)
     .await?
