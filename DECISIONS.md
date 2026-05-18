@@ -38,6 +38,12 @@ New migration `0002_addendum.sql`:
 - `characters` (plaintext `refresh_token TEXT NOT NULL`),
   `tracked_stations`, `tracked_types`.
 
+## 2026-05-18 — Phase 8
+
+- **systemd unit names use the full crate name** (`eve-trade-hub-poll.service` etc.) rather than the spec's `eve-hub-poll.service`. The crate is `eve-trade-hub-analyzer` (not `eve-hub-analyzer` per the Phase 0 deviation); matching unit names avoids ambiguity if the operator runs other EVE tooling on the same host. The shorter `-poll` / `-rollup` / `-sde-sync` suffix keeps invocations readable.
+- **Hardening flags added to systemd units beyond what the spec requires** (`NoNewPrivileges`, `PrivateTmp`, `ProtectSystem=full`, `ProtectHome`, etc.). Cheap to add, matches the security-conscious posture in PROMPT.md §9.
+- **`deploy/env.example` ships alongside the dev `.env.example`.** Same shape but with a managed-DB-shaped `DATABASE_URL` placeholder and no mention of `HUB_STRUCTURE_ID` / `HAUL_ISK_PER_M3` / `TOKEN_ENCRYPTION_KEY` (all eliminated by ADDENDUM.md §1/§4). Operators copy it to `/etc/eve-trade-hub-analyzer/env` mode 0600.
+
 ## 2026-05-17 — Phase 5a
 
 - **`market_orders_current.region_id` and `market_orders_snapshots.region_id` are NULLABLE.** PROMPT.md §5.4 had them NOT NULL with the implicit assumption that a single HUB_STRUCTURE_ID resolved to a region. ADDENDUM.md §2's multi-station model means we poll `/markets/structures/{id}/` for an arbitrary list of structures; ESI's structure-markets payload doesn't include region context, and looking it up per structure on every cycle would cost extra calls. Reports filter station rows by `location_id` and region rows by `region_id`, so NULL on structure rows is fine.

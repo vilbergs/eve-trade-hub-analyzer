@@ -1,0 +1,24 @@
+[Unit]
+Description=EVE trade hub analyzer — market poll daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eve-hub
+Group=eve-hub
+WorkingDirectory=/var/lib/eve-trade-hub-analyzer
+EnvironmentFile=/etc/eve-trade-hub-analyzer/env
+ExecStart=/usr/local/bin/poll
+Restart=on-failure
+RestartSec=30
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+LockPersonality=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target

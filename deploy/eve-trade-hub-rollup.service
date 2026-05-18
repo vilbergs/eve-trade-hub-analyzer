@@ -1,0 +1,16 @@
+[Unit]
+Description=EVE trade hub analyzer — daily rollup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=eve-hub
+Group=eve-hub
+WorkingDirectory=/var/lib/eve-trade-hub-analyzer
+EnvironmentFile=/etc/eve-trade-hub-analyzer/env
+ExecStart=/usr/local/bin/rollup
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
