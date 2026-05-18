@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use eve_trade_hub_analyzer::analysis::output::{Format, render};
-use eve_trade_hub_analyzer::analysis::stock_health;
+use eve_trade_hub_analyzer::analysis::{seeding, stock_health};
 use eve_trade_hub_analyzer::{Config, db, telemetry};
 
 /// Emit a stock-health or seeding report against the stored market data.
@@ -54,8 +54,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let rows = stock_health::run(&pool, station, limit).await?;
             render(&rows, format, &mut out)?;
         }
-        Cmd::Seeding { .. } => {
-            tracing::warn!("seeding report not yet implemented (Phase 7b)");
+        Cmd::Seeding {
+            limit,
+            format,
+            station,
+            min_profit_per_day,
+        } => {
+            let rows = seeding::run(
+                &pool,
+                config.jita_region_id,
+                station,
+                min_profit_per_day,
+                limit,
+            )
+            .await?;
+            render(&rows, format, &mut out)?;
         }
     }
     Ok(())
