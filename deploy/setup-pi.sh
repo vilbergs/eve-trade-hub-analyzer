@@ -9,8 +9,9 @@
 #   * `systemctl enable --now` (deferred until /etc/.../env is filled)
 #
 # Usage:
-#   sudo deploy/setup-pi.sh
-#   sudo BIN_DIR=/tmp/eve-hub-bins deploy/setup-pi.sh
+#   sudo deploy/setup-pi.sh            # build + install
+#   sudo deploy/setup-pi.sh --no-build  # install only (binaries must exist)
+#   sudo BIN_DIR=/tmp/eve-hub-bins deploy/setup-pi.sh --no-build
 
 set -euo pipefail
 
@@ -23,6 +24,14 @@ SERVICE_USER="${SERVICE_USER:-eve-hub}"
 SERVICE_HOME="${SERVICE_HOME:-/var/lib/eve-trade-hub-analyzer}"
 ETC_DIR="${ETC_DIR:-/etc/eve-trade-hub-analyzer}"
 BINARIES=(auth sde-sync poll rollup report)
+SKIP_BUILD=0
+
+for arg in "$@"; do
+    case "$arg" in
+        --no-build) SKIP_BUILD=1 ;;
+        *) printf 'unknown flag: %s\n' "$arg" >&2; exit 1 ;;
+    esac
+done
 
 env_was_created=0
 
@@ -33,6 +42,19 @@ require_root() {
     [[ $EUID -eq 0 ]] || die "must be run as root (sudo $0)"
 }
 
+build_binaries() {
+    if (( SKIP_BUILD )); then
+        log "skipping build (--no-build)"
+        return
+    fi
+    log "building release binaries"
+    local bin_flags=()
+    for b in "${BINARIES[@]}"; do
+        bin_flags+=(--bin "$b")
+    done
+    cargo build --release "${bin_flags[@]}"
+}
+
 require_binaries() {
     local missing=()
     for b in "${BINARIES[@]}"; do
@@ -41,8 +63,7 @@ require_binaries() {
     if (( ${#missing[@]} )); then
         printf 'error: binaries not found:\n' >&2
         printf '  %s\n' "${missing[@]}" >&2
-        printf 'hint: build first:\n' >&2
-        printf '  cargo build --release --bin auth --bin sde-sync --bin poll --bin rollup --bin report\n' >&2
+        printf 'hint: build first or drop --no-build\n' >&2
         exit 1
     fi
 }
@@ -115,6 +136,7 @@ EOF
 
 main() {
     require_root
+    build_binaries
     require_binaries
     ensure_user
     ensure_env
