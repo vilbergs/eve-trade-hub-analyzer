@@ -31,8 +31,12 @@ pub enum SdeReport {
 
 #[instrument(skip_all)]
 pub async fn sync(pool: &PgPool, http: &reqwest::Client) -> AppResult<SdeReport> {
-    let checksum_body = fetch_text(http, &format!("{BASE_URL}/checksum")).await?;
-    let version = version_id(&checksum_body);
+    // Fuzzwork doesn't expose a /checksum endpoint (despite what PROMPT.md
+    // §7 Phase 1 says); the cheapest stable version source is the
+    // Last-Modified header on invTypes.csv — it's the largest file in
+    // the dump and changes on every refresh.
+    let version_seed = fetch_last_modified(http, &format!("{BASE_URL}/invTypes.csv")).await?;
+    let version = version_id(&version_seed);
     info!(version = %version, "computed SDE version");
 
     if current_version(pool).await? == Some(version.clone()) {
@@ -52,8 +56,12 @@ pub async fn sync(pool: &PgPool, http: &reqwest::Client) -> AppResult<SdeReport>
         "downloaded CSVs"
     );
 
+    info!("initiating pool");
     let mut tx = pool.begin().await?;
+    info!("loading counts");
     let counts = load_all(&mut tx, &categories, &groups, &market_groups, &types).await?;
+
+    info!("seeding DB");
     sqlx::query(
         "INSERT INTO sde_meta (id, version, loaded_at) \
          VALUES (1, $1, now()) \
@@ -80,14 +88,19 @@ async fn current_version(pool: &PgPool) -> AppResult<Option<String>> {
     Ok(row.map(|r| r.0))
 }
 
-async fn fetch_text(http: &reqwest::Client, url: &str) -> AppResult<String> {
+async fn fetch_last_modified(http: &reqwest::Client, url: &str) -> AppResult<String> {
     let resp = http
-        .get(url)
+        .head(url)
         .timeout(Duration::from_secs(30))
         .send()
         .await?
         .error_for_status()?;
-    Ok(resp.text().await?)
+    let lm = resp
+        .headers()
+        .get(reqwest::header::LAST_MODIFIED)
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(|| AppError::Other(format!("no Last-Modified header on {url}")))?;
+    Ok(lm.to_owned())
 }
 
 async fn fetch_bytes(http: &reqwest::Client, url: &str) -> AppResult<Vec<u8>> {
@@ -124,6 +137,7 @@ async fn load_all<'c>(
     let conn = tx.acquire().await?;
 
     // 1. Stage every CSV into a temp TEXT-only table.
+    info!("staging tmp_categories");
     sqlx::query(
         "CREATE TEMP TABLE tmp_categories ( \
             category_id TEXT, name TEXT, icon_id TEXT, published TEXT \
@@ -138,6 +152,7 @@ async fn load_all<'c>(
     )
     .await?;
 
+    info!("staging tmp_groups");
     sqlx::query(
         "CREATE TEMP TABLE tmp_groups ( \
             group_id TEXT, category_id TEXT, name TEXT, icon_id TEXT, \
@@ -154,6 +169,7 @@ async fn load_all<'c>(
     )
     .await?;
 
+    info!("staging tmp_market_groups");
     sqlx::query(
         "CREATE TEMP TABLE tmp_market_groups ( \
             market_group_id TEXT, parent_group_id TEXT, name TEXT, \
@@ -169,6 +185,7 @@ async fn load_all<'c>(
     )
     .await?;
 
+    info!(bytes = types_csv.len(), "staging tmp_types");
     sqlx::query(
         "CREATE TEMP TABLE tmp_types ( \
             type_id TEXT, group_id TEXT, name TEXT, description TEXT, \
@@ -185,40 +202,58 @@ async fn load_all<'c>(
         types_csv,
     )
     .await?;
+    info!("staged tmp_types");
 
-    // 2. Wipe real tables in FK-safe order, then re-populate.
-    sqlx::query("TRUNCATE sde_types, sde_market_groups, sde_groups, sde_categories")
-        .execute(&mut *conn)
-        .await?;
+    // 2. Upsert into the real tables in FK-safe order. TRUNCATE was the
+    //    original plan but tracked_types FKs to sde_types (ADDENDUM.md
+    //    §1), so we can't wipe sde_types without losing user data. Using
+    //    ON CONFLICT DO UPDATE preserves tracked rows; stale rows from
+    //    previous dumps linger but are harmless because reports filter
+    //    via tracked_types / tracked_stations.
 
+    info!("upserting sde_categories");
     let categories = sqlx::query(
         "INSERT INTO sde_categories (category_id, name, published) \
          SELECT category_id::BIGINT, name, to_bool(published) \
-         FROM tmp_categories WHERE category_id IS NOT NULL AND category_id <> ''",
+         FROM tmp_categories WHERE category_id IS NOT NULL AND category_id <> '' \
+         ON CONFLICT (category_id) DO UPDATE SET \
+            name = EXCLUDED.name, \
+            published = EXCLUDED.published",
     )
     .execute(&mut *conn)
     .await?
     .rows_affected();
 
+    info!("upserting sde_groups");
     let groups = sqlx::query(
         "INSERT INTO sde_groups (group_id, category_id, name, published) \
          SELECT group_id::BIGINT, category_id::BIGINT, name, to_bool(published) \
          FROM tmp_groups \
          WHERE group_id IS NOT NULL AND group_id <> '' \
-           AND EXISTS (SELECT 1 FROM sde_categories c WHERE c.category_id = tmp_groups.category_id::BIGINT)",
+           AND EXISTS (SELECT 1 FROM sde_categories c WHERE c.category_id = tmp_groups.category_id::BIGINT) \
+         ON CONFLICT (group_id) DO UPDATE SET \
+            category_id = EXCLUDED.category_id, \
+            name = EXCLUDED.name, \
+            published = EXCLUDED.published",
     )
     .execute(&mut *conn)
     .await?
     .rows_affected();
 
-    // Self-referential FK: insert with NULL parents first, then UPDATE.
+    // Self-referential FK: upsert with NULL parents first, then UPDATE
+    // (a single INSERT-with-parent would need topological ordering).
+    info!("upserting sde_market_groups (pass 1: NULL parents)");
     sqlx::query(
         "INSERT INTO sde_market_groups (market_group_id, name, parent_id) \
          SELECT market_group_id::BIGINT, name, NULL::BIGINT \
-         FROM tmp_market_groups WHERE market_group_id IS NOT NULL AND market_group_id <> ''",
+         FROM tmp_market_groups WHERE market_group_id IS NOT NULL AND market_group_id <> '' \
+         ON CONFLICT (market_group_id) DO UPDATE SET \
+            name = EXCLUDED.name, \
+            parent_id = NULL",
     )
     .execute(&mut *conn)
     .await?;
+    info!("updating sde_market_groups (pass 2: parents)");
     let market_groups = sqlx::query(
         "UPDATE sde_market_groups mg \
          SET parent_id = NULLIF(NULLIF(t.parent_group_id, ''), 'None')::BIGINT \
@@ -231,6 +266,7 @@ async fn load_all<'c>(
     .await?
     .rows_affected();
 
+    info!("upserting sde_types");
     let types = sqlx::query(
         "INSERT INTO sde_types ( \
             type_id, name, group_id, market_group_id, \
@@ -246,7 +282,13 @@ async fn load_all<'c>(
          FROM tmp_types t \
          WHERE t.type_id IS NOT NULL AND t.type_id <> '' \
            AND t.group_id IS NOT NULL AND t.group_id <> '' \
-           AND EXISTS (SELECT 1 FROM sde_groups g WHERE g.group_id = t.group_id::BIGINT)",
+           AND EXISTS (SELECT 1 FROM sde_groups g WHERE g.group_id = t.group_id::BIGINT) \
+         ON CONFLICT (type_id) DO UPDATE SET \
+            name = EXCLUDED.name, \
+            group_id = EXCLUDED.group_id, \
+            market_group_id = EXCLUDED.market_group_id, \
+            volume = EXCLUDED.volume, \
+            published = EXCLUDED.published",
     )
     .execute(&mut *conn)
     .await?

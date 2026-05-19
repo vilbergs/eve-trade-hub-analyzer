@@ -38,6 +38,32 @@ New migration `0002_addendum.sql`:
 - `characters` (plaintext `refresh_token TEXT NOT NULL`),
   `tracked_stations`, `tracked_types`.
 
+## 2026-05-18 — SDE loader uses UPSERT, not TRUNCATE
+
+PROMPT.md §7 Phase 1 said "TRUNCATE the four SDE tables". ADDENDUM.md
+§1 added `tracked_types` with a FK to `sde_types`, which makes the
+TRUNCATE error out (`cannot truncate a table referenced in a foreign
+key constraint`). TRUNCATE CASCADE would wipe `tracked_types` (user
+data) — wrong. Swapped to INSERT … ON CONFLICT DO UPDATE for all four
+sde_* tables. Stale rows from previous dumps linger but are harmless
+because reports filter through tracked_types / tracked_stations
+anyway; if we ever need a full prune, a `DELETE WHERE type_id NOT IN
+(SELECT type_id FROM tmp_types)` would do it (and would surface FK
+violations, which is the correct behavior).
+
+## 2026-05-18 — Fuzzwork /checksum is gone
+
+PROMPT.md §7 Phase 1 step 2.i said to fetch
+`https://www.fuzzwork.co.uk/dump/latest/checksum` for the version
+seed; the URL 404s now (it likely existed when the spec was written;
+the index lists `evesde.bacpac`, the CSVs, and bz2 dumps but no
+checksum file). Swapped `src/sde/mod.rs` to `HEAD invTypes.csv` and
+hash the `Last-Modified` header. invTypes.csv is the largest dump
+file (3.8M) and is regenerated on every refresh, so its
+Last-Modified is a stable composite version. The rest of the
+idempotency logic — `eve_sde_meta.version` compare-and-short-circuit
+— is unchanged.
+
 ## 2026-05-18 — Phase 8
 
 - **systemd unit names use the full crate name** (`eve-trade-hub-poll.service` etc.) rather than the spec's `eve-hub-poll.service`. The crate is `eve-trade-hub-analyzer` (not `eve-hub-analyzer` per the Phase 0 deviation); matching unit names avoids ambiguity if the operator runs other EVE tooling on the same host. The shorter `-poll` / `-rollup` / `-sde-sync` suffix keeps invocations readable.

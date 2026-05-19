@@ -27,8 +27,16 @@ const SEEDED_CHARACTER_INVALID: i64 = 9_000_002;
 
 async fn db_pool() -> Option<PgPool> {
     let url = std::env::var("DATABASE_URL").ok()?;
-    let pool = sqlx::PgPool::connect(&url).await.ok()?;
-    db::MIGRATOR.run(&pool).await.ok()?;
+    // DATABASE_URL is set, so the operator wants to run the test for real.
+    // Connection / migration failures past this point should fail loudly
+    // rather than silently skip.
+    let pool = sqlx::PgPool::connect(&url)
+        .await
+        .expect("DATABASE_URL set but connection failed");
+    db::MIGRATOR
+        .run(&pool)
+        .await
+        .expect("migrations failed against the test database");
     Some(pool)
 }
 
