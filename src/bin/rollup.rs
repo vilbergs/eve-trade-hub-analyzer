@@ -1,20 +1,13 @@
-//! `rollup` binary — fold a day of snapshots into market_daily_agg, then
-//! refresh Jita ESI history for every type currently seen in
-//! market_orders_current at the Jita region.
+//! `rollup` binary — fold a day of snapshots into market_daily_agg.
 //!
 //! Usage: `rollup [--day YYYY-MM-DD]`. Default day is yesterday UTC.
 
 use chrono::{Duration, NaiveDate, Utc};
 use clap::Parser;
 use eve_trade_hub_analyzer::error::{AppError, AppResult};
-use eve_trade_hub_analyzer::esi::EsiClient;
-use eve_trade_hub_analyzer::esi::market;
 use eve_trade_hub_analyzer::{Config, db, telemetry};
-use futures::StreamExt;
 use sqlx::PgPool;
-use tracing::{info, warn};
-
-const HISTORY_CONCURRENCY: usize = 20;
+use tracing::info;
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -30,7 +23,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let config = Config::from_env()?;
     let pool = db::build_pool(&config).await?;
-    let esi = EsiClient::new(&config)?;
 
     let day: NaiveDate = match args.day {
         Some(s) => NaiveDate::parse_from_str(&s, "%Y-%m-%d")
@@ -41,13 +33,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let aggregated = roll_day(&pool, day).await?;
     info!(%day, rows = aggregated, "market_daily_agg upserted");
-
-    let updated = refresh_jita_history(&pool, &esi, config.jita_region_id).await?;
-    info!(
-        region_id = config.jita_region_id,
-        rows = updated,
-        "market_history upserted"
-    );
 
     Ok(())
 }
@@ -138,72 +123,4 @@ async fn roll_day(pool: &PgPool, day: NaiveDate) -> AppResult<u64> {
     .await?;
 
     Ok(res.rows_affected())
-}
-
-/// Fetch ESI history for every type currently present in
-/// market_orders_current at the Jita region and upsert.
-async fn refresh_jita_history(pool: &PgPool, esi: &EsiClient, region_id: i64) -> AppResult<u64> {
-    let type_ids: Vec<i64> = sqlx::query_scalar(
-        "SELECT DISTINCT type_id FROM market_orders_current WHERE region_id = $1",
-    )
-    .bind(region_id)
-    .fetch_all(pool)
-    .await?;
-
-    if type_ids.is_empty() {
-        warn!(
-            region_id,
-            "no types in market_orders_current for region; nothing to refresh"
-        );
-        return Ok(0);
-    }
-
-    let results: Vec<_> = futures::stream::iter(type_ids)
-        .map(|type_id| {
-            let esi = esi.clone();
-            let pool = pool.clone();
-            async move {
-                let history = match market::region_history(&esi, region_id, type_id).await {
-                    Ok(h) => h,
-                    Err(e) => {
-                        warn!(type_id, error = %e, "history fetch failed");
-                        return 0u64;
-                    }
-                };
-                let mut written = 0u64;
-                for h in history {
-                    let res = sqlx::query(
-                        "INSERT INTO market_history \
-                            (region_id, type_id, date, average, highest, lowest, volume, order_count) \
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
-                         ON CONFLICT (region_id, type_id, date) DO UPDATE SET \
-                            average = EXCLUDED.average, \
-                            highest = EXCLUDED.highest, \
-                            lowest = EXCLUDED.lowest, \
-                            volume = EXCLUDED.volume, \
-                            order_count = EXCLUDED.order_count",
-                    )
-                    .bind(region_id)
-                    .bind(type_id)
-                    .bind(h.date)
-                    .bind(h.average)
-                    .bind(h.highest)
-                    .bind(h.lowest)
-                    .bind(h.volume)
-                    .bind(h.order_count)
-                    .execute(&pool)
-                    .await;
-                    match res {
-                        Ok(r) => written += r.rows_affected(),
-                        Err(e) => warn!(type_id, error = %e, "history insert failed"),
-                    }
-                }
-                written
-            }
-        })
-        .buffer_unordered(HISTORY_CONCURRENCY)
-        .collect()
-        .await;
-
-    Ok(results.into_iter().sum())
 }
