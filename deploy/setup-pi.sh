@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
-BIN_DIR="${BIN_DIR:-target/aarch64-unknown-linux-gnu/release}"
+BIN_DIR="${BIN_DIR:-target/release}"
 SERVICE_USER="${SERVICE_USER:-eve-hub}"
 SERVICE_HOME="${SERVICE_HOME:-/var/lib/eve-trade-hub-analyzer}"
 ETC_DIR="${ETC_DIR:-/etc/eve-trade-hub-analyzer}"
@@ -41,10 +41,8 @@ require_binaries() {
     if (( ${#missing[@]} )); then
         printf 'error: binaries not found:\n' >&2
         printf '  %s\n' "${missing[@]}" >&2
-        printf 'hint: cross-build on the dev host and copy them here:\n' >&2
-        printf '  cross build --release --target aarch64-unknown-linux-gnu \\\n' >&2
-        printf '      --bin auth --bin sde-sync --bin poll --bin rollup --bin report\n' >&2
-        printf '  scp target/aarch64-unknown-linux-gnu/release/{auth,sde-sync,poll,rollup,report} pi:%s/\n' "$BIN_DIR" >&2
+        printf 'hint: build first:\n' >&2
+        printf '  cargo build --release --bin auth --bin sde-sync --bin poll --bin rollup --bin report\n' >&2
         exit 1
     fi
 }
