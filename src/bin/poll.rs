@@ -1,14 +1,13 @@
-//! `poll` daemon — runs hub + jita snapshots on `POLL_INTERVAL_SECS` and
-//! keeps the weekly partitions of `market_orders_snapshots` tidy.
+//! `poll` daemon — runs hub + jita snapshots on independent timers so
+//! neither poller blocks the other.
 //!
 //! Lifecycle:
-//! - On startup: ensure partitions, then enter the tick loop.
-//! - Each tick: spawn `poll_hub` + `poll_jita` in parallel; log per-source
-//!   summaries; errors are recorded in `snapshot_runs` by the pollers
-//!   themselves, the daemon keeps going.
+//! - On startup: ensure partitions, then spawn hub + jita tasks.
+//! - Each task ticks on its own `POLL_INTERVAL_SECS` interval; errors are
+//!   recorded in `snapshot_runs` by the pollers, the tasks keep going.
 //! - Once per UTC day: ensure new partitions, drop partitions whose week
 //!   ended more than 30 days ago.
-//! - SIGINT / SIGTERM: finish whatever's in flight, then exit cleanly.
+//! - SIGINT / SIGTERM: cancel both tasks and exit cleanly.
 
 use chrono::{Datelike, Utc};
 use clap::Parser;
@@ -46,29 +45,82 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ensure_partitions(&pool, Utc::now()).await?;
 
     if args.once {
-        run_cycle(&pool, &http, &esi, &cache, &config, &endpoints).await;
+        let (hub_res, jita_res) = tokio::join!(
+            hub::poll_hub(&pool, &http, &esi, &cache, &config, &endpoints),
+            jita::poll_jita(&pool, &esi, &config),
+        );
+        log_hub_result(hub_res);
+        log_jita_result(jita_res);
         return Ok(());
     }
 
-    let mut ticker = tokio::time::interval(config.poll_interval);
-    ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-    let mut last_partition_day = Utc::now().day();
+    // --- Spawn independent poller tasks ---
+
+    let (shutdown_tx, _) = tokio::sync::watch::channel(false);
+
+    let hub_handle = tokio::spawn({
+        let pool = pool.clone();
+        let http = http.clone();
+        let esi = esi.clone();
+        let cache = cache.clone();
+        let config = config.clone();
+        let endpoints = endpoints.clone();
+        let mut shutdown_rx = shutdown_tx.subscribe();
+        async move {
+            let mut ticker = tokio::time::interval(config.poll_interval);
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tokio::select! {
+                    _ = ticker.tick() => {
+                        let res = hub::poll_hub(&pool, &http, &esi, &cache, &config, &endpoints).await;
+                        log_hub_result(res);
+                    }
+                    _ = shutdown_rx.changed() => break,
+                }
+            }
+        }
+    });
+
+    let jita_handle = tokio::spawn({
+        let pool = pool.clone();
+        let esi = esi.clone();
+        let config = config.clone();
+        let mut shutdown_rx = shutdown_tx.subscribe();
+        async move {
+            let mut ticker = tokio::time::interval(config.poll_interval);
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tokio::select! {
+                    _ = ticker.tick() => {
+                        let res = jita::poll_jita(&pool, &esi, &config).await;
+                        log_jita_result(res);
+                    }
+                    _ = shutdown_rx.changed() => break,
+                }
+            }
+        }
+    });
+
+    // --- Main task: signal handling + partition housekeeping ---
 
     let mut sigterm = signal(SignalKind::terminate())?;
     let mut sigint = signal(SignalKind::interrupt())?;
+    let mut last_partition_day = Utc::now().day();
+
+    // Check for partition housekeeping every hour.
+    let mut housekeeping_ticker = tokio::time::interval(std::time::Duration::from_secs(3600));
+    housekeeping_ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
     loop {
         tokio::select! {
-            _ = ticker.tick() => {
+            _ = housekeeping_ticker.tick() => {
                 let now = Utc::now();
-                // Run partition housekeeping on the first tick of every UTC day.
                 if now.day() != last_partition_day {
                     if let Err(e) = partition_housekeeping(&pool).await {
                         error!(error = %e, "partition housekeeping failed");
                     }
                     last_partition_day = now.day();
                 }
-                run_cycle(&pool, &http, &esi, &cache, &config, &endpoints).await;
             }
             _ = sigterm.recv() => {
                 info!("SIGTERM received, shutting down");
@@ -81,22 +133,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    let _ = shutdown_tx.send(true);
+    let _ = hub_handle.await;
+    let _ = jita_handle.await;
+
     Ok(())
 }
 
-async fn run_cycle(
-    pool: &sqlx::PgPool,
-    http: &reqwest::Client,
-    esi: &EsiClient,
-    cache: &AccessTokenCache,
-    config: &Config,
-    endpoints: &AuthEndpoints,
+fn log_hub_result(
+    res: Result<
+        Vec<eve_trade_hub_analyzer::snapshot::RunSummary>,
+        eve_trade_hub_analyzer::error::AppError,
+    >,
 ) {
-    let (hub_res, jita_res) = tokio::join!(
-        hub::poll_hub(pool, http, esi, cache, config, endpoints),
-        jita::poll_jita(pool, esi, config),
-    );
-    match hub_res {
+    match res {
         Ok(summaries) => {
             for s in summaries {
                 info!(
@@ -111,7 +161,15 @@ async fn run_cycle(
         }
         Err(e) => error!(error = %e, "hub poll failed"),
     }
-    match jita_res {
+}
+
+fn log_jita_result(
+    res: Result<
+        eve_trade_hub_analyzer::snapshot::RunSummary,
+        eve_trade_hub_analyzer::error::AppError,
+    >,
+) {
+    match res {
         Ok(s) => info!(
             source = s.source,
             region_id = ?s.location_id,
