@@ -9,9 +9,9 @@
 #   * `systemctl enable --now` (deferred until /etc/.../env is filled)
 #
 # Usage:
-#   sudo deploy/setup-pi.sh            # build + install
-#   sudo deploy/setup-pi.sh --no-build  # install only (binaries must exist)
-#   sudo BIN_DIR=/tmp/eve-hub-bins deploy/setup-pi.sh --no-build
+#   deploy/setup-pi.sh          # build + sudo install
+#   deploy/setup-pi.sh --no-build  # sudo install only (binaries must exist)
+#   BIN_DIR=/tmp/bins deploy/setup-pi.sh --no-build
 
 set -euo pipefail
 
@@ -38,29 +38,21 @@ env_was_created=0
 log() { printf '==> %s\n' "$*"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
-require_root() {
-    [[ $EUID -eq 0 ]] || die "must be run as root (sudo $0)"
-}
-
 build_binaries() {
     if (( SKIP_BUILD )); then
         log "skipping build (--no-build)"
         return
     fi
-    # sudo strips PATH; pick up cargo from the invoking user's home.
-    local real_home="${SUDO_USER:+$(eval echo "~$SUDO_USER")}"
-    real_home="${real_home:-$HOME}"
-    if ! command -v cargo &>/dev/null && [[ -f "$real_home/.cargo/env" ]]; then
-        # shellcheck source=/dev/null
-        source "$real_home/.cargo/env"
-    fi
-    command -v cargo &>/dev/null || die "cargo not found — install Rust (https://rustup.rs)"
     log "building release binaries"
     local bin_flags=()
     for b in "${BINARIES[@]}"; do
         bin_flags+=(--bin "$b")
     done
     cargo build --release "${bin_flags[@]}"
+}
+
+require_root() {
+    [[ $EUID -eq 0 ]] || die "must be run as root (try: sudo $0)"
 }
 
 require_binaries() {
@@ -143,8 +135,13 @@ EOF
 }
 
 main() {
-    require_root
+    # Build as the current user (cargo needs ~/.cargo), then escalate for install.
     build_binaries
+    if [[ $EUID -ne 0 ]]; then
+        log "re-running as root for install"
+        exec sudo --preserve-env=BIN_DIR,SERVICE_USER,SERVICE_HOME,ETC_DIR \
+            "$0" --no-build
+    fi
     require_binaries
     ensure_user
     ensure_env
