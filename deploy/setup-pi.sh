@@ -47,6 +47,14 @@ build_binaries() {
         log "skipping build (--no-build)"
         return
     fi
+    # sudo strips PATH; pick up cargo from the invoking user's home.
+    local real_home="${SUDO_USER:+$(eval echo "~$SUDO_USER")}"
+    real_home="${real_home:-$HOME}"
+    if ! command -v cargo &>/dev/null && [[ -f "$real_home/.cargo/env" ]]; then
+        # shellcheck source=/dev/null
+        source "$real_home/.cargo/env"
+    fi
+    command -v cargo &>/dev/null || die "cargo not found — install Rust (https://rustup.rs)"
     log "building release binaries"
     local bin_flags=()
     for b in "${BINARIES[@]}"; do
