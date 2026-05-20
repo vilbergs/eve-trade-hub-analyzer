@@ -9,3 +9,4 @@
 pub mod output;
 pub mod seeding;
 pub mod stock_health;
+pub mod stock_health_history;
