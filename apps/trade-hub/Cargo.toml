@@ -1,0 +1,56 @@
+[package]
+name = "eve-trade-hub-analyzer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "auth"
+path = "src/bin/auth.rs"
+
+[[bin]]
+name = "sde-sync"
+path = "src/bin/sde_sync.rs"
+
+[[bin]]
+name = "poll"
+path = "src/bin/poll.rs"
+
+[[bin]]
+name = "rollup"
+path = "src/bin/rollup.rs"
+
+[[bin]]
+name = "report"
+path = "src/bin/report.rs"
+
+[[bin]]
+name = "sheets"
+path = "src/bin/sheets.rs"
+
+[dependencies]
+tokio.workspace = true
+reqwest.workspace = true
+axum.workspace = true
+sqlx.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jsonwebtoken.workspace = true
+oauth2.workspace = true
+dotenvy.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+comfy-table.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+url.workspace = true
+sha2.workspace = true
+futures.workspace = true
+
+[dev-dependencies]
+wiremock.workspace = true
+tempfile.workspace = true

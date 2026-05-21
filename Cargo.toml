@@ -1,37 +1,15 @@
-[package]
-name = "eve-trade-hub-analyzer"
+[workspace]
+resolver = "2"
+members = [
+    "apps/trade-hub",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 
-[lib]
-path = "src/lib.rs"
-
-[[bin]]
-name = "auth"
-path = "src/bin/auth.rs"
-
-[[bin]]
-name = "sde-sync"
-path = "src/bin/sde_sync.rs"
-
-[[bin]]
-name = "poll"
-path = "src/bin/poll.rs"
-
-[[bin]]
-name = "rollup"
-path = "src/bin/rollup.rs"
-
-[[bin]]
-name = "report"
-path = "src/bin/report.rs"
-
-[[bin]]
-name = "sheets"
-path = "src/bin/sheets.rs"
-
-[dependencies]
+[workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip"] }
 axum = { version = "0.7", default-features = false, features = ["tokio", "http1", "query"] }
@@ -50,7 +28,6 @@ thiserror = "1"
 url = "2"
 sha2 = "0.10"
 futures = "0.3"
-
-[dev-dependencies]
+async-trait = "0.1"
 wiremock = "0.6"
 tempfile = "3"
