@@ -4,6 +4,7 @@ pub mod db;
 pub mod error;
 pub mod esi;
 pub mod sde;
+pub mod sheets;
 pub mod snapshot;
 pub mod telemetry;
 

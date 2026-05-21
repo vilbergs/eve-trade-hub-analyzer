@@ -1,6 +1,22 @@
 # Decisions
 
-Running log of choices that deviate from `PROMPT.md` / `ADDENDUM.md` or that resolved an ambiguity.
+## 2026-05-19 — Drop ESI history refresh from rollup
+
+PROMPT.md §7 Phase 6 bundled a Jita-region ESI history refresh into
+the nightly rollup (one HTTP fetch per distinct type, then ~400
+INSERTs into `market_history` per type). A grep of `src/` confirmed
+no consumer reads `market_history` — both reports (`seeding.rs`,
+`stock_health.rs`) only read `market_orders_current` and
+`market_daily_agg`. The refresh was doing thousands of round-trips
+per night for data nobody used, and on Cloud SQL it took long enough
+to look like a hang.
+
+Removed the `refresh_jita_history` call and function from
+`src/bin/rollup.rs`. Left the `market_history` table, the
+`migrations/0004_rollup.sql` definition, and the `region_history`
+ESI wrapper in `src/esi/market.rs` in place: future work may want
+trend-style reports, and dropping them now would just churn the
+schema (see `IMPROVEMENTS.MD` §2).
 
 ## 2026-05-17 — Apply ADDENDUM.md
 
