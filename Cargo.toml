@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/eve-core",
     "apps/trade-hub",
 ]
 

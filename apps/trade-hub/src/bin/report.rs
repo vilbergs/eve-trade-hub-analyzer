@@ -1,7 +1,8 @@
 use clap::{Parser, Subcommand};
 use eve_trade_hub_analyzer::analysis::output::{Format, render};
 use eve_trade_hub_analyzer::analysis::{seeding, stock_health, stock_health_history};
-use eve_trade_hub_analyzer::{Config, db, telemetry};
+use eve_trade_hub_analyzer::{Config, db};
+use eve_core::telemetry;
 
 /// Emit a stock-health or seeding report against the stored market data.
 #[derive(Parser, Debug)]

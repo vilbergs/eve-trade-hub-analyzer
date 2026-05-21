@@ -18,7 +18,7 @@ use tokio::sync::Mutex;
 use tracing::instrument;
 
 use crate::config::GoogleConfig;
-use crate::error::{AppError, AppResult};
+use eve_core::{AppError, AppResult};
 
 const SCOPE: &str = "https://www.googleapis.com/auth/spreadsheets";
 const JWT_BEARER_GRANT: &str = "urn:ietf:params:oauth:grant-type:jwt-bearer";

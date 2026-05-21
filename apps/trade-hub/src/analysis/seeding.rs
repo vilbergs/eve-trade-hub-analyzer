@@ -10,7 +10,7 @@ use serde::Serialize;
 use sqlx::PgPool;
 
 use super::output::{Renderable, fmt_int, fmt_money, fmt_opt_f64};
-use crate::error::AppResult;
+use eve_core::AppResult;
 
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct SeedingRow {

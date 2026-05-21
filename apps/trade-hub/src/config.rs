@@ -1,7 +1,7 @@
 use std::env;
 use std::time::Duration;
 
-use crate::error::{AppError, AppResult};
+use eve_core::{AppError, AppResult};
 
 #[derive(Debug, Clone)]
 pub struct Config {

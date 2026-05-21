@@ -8,7 +8,7 @@ use sqlx::PgPool;
 use tracing::{error, info, instrument, warn};
 
 use crate::Config;
-use crate::error::{AppError, AppResult};
+use eve_core::{AppError, AppResult};
 use crate::esi::EsiClient;
 use crate::esi::auth::{AccessTokenCache, AuthEndpoints, get_access_token};
 use crate::esi::market::{MarketOrder, structure_orders};

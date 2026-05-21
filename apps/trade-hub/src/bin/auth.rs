@@ -15,11 +15,12 @@ use axum::extract::{Query, State};
 use axum::response::{Html, Redirect};
 use axum::routing::get;
 use clap::Parser;
-use eve_trade_hub_analyzer::error::{AppError, AppResult};
+use eve_core::{AppError, AppResult};
 use eve_trade_hub_analyzer::esi::auth::{
     AuthEndpoints, CharacterRow, LoginStart, complete_login, start_login,
 };
-use eve_trade_hub_analyzer::{Config, db, telemetry};
+use eve_trade_hub_analyzer::{Config, db};
+use eve_core::telemetry;
 use oauth2::{CsrfToken, PkceCodeVerifier};
 use serde::Deserialize;
 use sqlx::PgPool;

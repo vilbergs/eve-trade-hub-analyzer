@@ -1,0 +1,17 @@
+[package]
+name = "eve-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+sqlx.workspace = true
+reqwest.workspace = true
+serde_json.workspace = true
+jsonwebtoken.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

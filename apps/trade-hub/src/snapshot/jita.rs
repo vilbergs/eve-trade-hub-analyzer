@@ -10,7 +10,7 @@ use sqlx::PgPool;
 use tracing::{info, instrument};
 
 use crate::Config;
-use crate::error::AppResult;
+use eve_core::AppResult;
 use crate::esi::EsiClient;
 use crate::esi::market::region_orders;
 

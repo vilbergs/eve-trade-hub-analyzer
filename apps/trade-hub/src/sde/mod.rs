@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use sqlx::{Acquire, PgPool};
 use tracing::{info, instrument};
 
-use crate::error::{AppError, AppResult};
+use eve_core::{AppError, AppResult};
 
 const BASE_URL: &str = "https://www.fuzzwork.co.uk/dump/latest";
 

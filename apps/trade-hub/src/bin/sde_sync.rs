@@ -1,5 +1,6 @@
 use clap::Parser;
-use eve_trade_hub_analyzer::{Config, db, sde, telemetry};
+use eve_trade_hub_analyzer::{Config, db, sde};
+use eve_core::telemetry;
 
 /// Download the latest Fuzzwork SDE CSVs and load type/group/market-group tables.
 #[derive(Parser, Debug)]

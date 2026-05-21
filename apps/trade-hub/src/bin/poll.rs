@@ -14,7 +14,8 @@ use clap::Parser;
 use eve_trade_hub_analyzer::esi::EsiClient;
 use eve_trade_hub_analyzer::esi::auth::{AccessTokenCache, AuthEndpoints};
 use eve_trade_hub_analyzer::snapshot::{drop_old_partitions, ensure_partitions, hub, jita};
-use eve_trade_hub_analyzer::{Config, db, telemetry};
+use eve_trade_hub_analyzer::{Config, db};
+use eve_core::telemetry;
 use tokio::signal::unix::{SignalKind, signal};
 use tracing::{error, info};
 
@@ -143,7 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn log_hub_result(
     res: Result<
         Vec<eve_trade_hub_analyzer::snapshot::RunSummary>,
-        eve_trade_hub_analyzer::error::AppError,
+        eve_core::AppError,
     >,
 ) {
     match res {
@@ -166,7 +167,7 @@ fn log_hub_result(
 fn log_jita_result(
     res: Result<
         eve_trade_hub_analyzer::snapshot::RunSummary,
-        eve_trade_hub_analyzer::error::AppError,
+        eve_core::AppError,
     >,
 ) {
     match res {

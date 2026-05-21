@@ -16,7 +16,7 @@ pub mod auth;
 use serde_json::Value;
 
 use crate::analysis::output::Renderable;
-use crate::error::AppResult;
+use eve_core::AppResult;
 
 /// Push the given rows to `tab_name` inside `spreadsheet_id`:
 /// 1. Ensures the tab exists (creates it if missing).

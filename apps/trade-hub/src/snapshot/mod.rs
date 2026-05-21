@@ -14,7 +14,7 @@ use std::collections::HashSet;
 use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 use sqlx::PgPool;
 
-use crate::error::AppResult;
+use eve_core::AppResult;
 use crate::esi::market::MarketOrder;
 
 #[derive(Debug, Clone)]

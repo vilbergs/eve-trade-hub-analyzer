@@ -7,7 +7,7 @@
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::error::{AppError, AppResult};
+use eve_core::{AppError, AppResult};
 
 const SHEETS_BASE: &str = "https://sheets.googleapis.com/v4/spreadsheets";
 

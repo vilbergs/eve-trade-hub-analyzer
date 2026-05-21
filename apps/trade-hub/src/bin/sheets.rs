@@ -15,10 +15,11 @@
 
 use clap::{Parser, Subcommand};
 use eve_trade_hub_analyzer::analysis::{seeding, stock_health, stock_health_history};
-use eve_trade_hub_analyzer::error::AppResult;
+use eve_core::AppResult;
 use eve_trade_hub_analyzer::sheets::auth::{AccessTokenCache, get_access_token};
 use eve_trade_hub_analyzer::sheets::push_report;
-use eve_trade_hub_analyzer::{Config, db, telemetry};
+use eve_trade_hub_analyzer::{Config, db};
+use eve_core::telemetry;
 
 /// Push stock-health / seeding / stock-health-history reports to Google
 /// Sheets, one tab per report.

@@ -566,6 +566,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "eve-core"
+version = "0.1.0"
+dependencies = [
+ "jsonwebtoken",
+ "reqwest",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "eve-trade-hub-analyzer"
 version = "0.1.0"
 dependencies = [
@@ -574,6 +587,7 @@ dependencies = [
  "clap",
  "comfy-table",
  "dotenvy",
+ "eve-core",
  "futures",
  "jsonwebtoken",
  "oauth2",

@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 
 use crate::Config;
-use crate::error::AppResult;
+use eve_core::AppResult;
 
 pub async fn build_pool(config: &Config) -> AppResult<PgPool> {
     let pool = PgPoolOptions::new()

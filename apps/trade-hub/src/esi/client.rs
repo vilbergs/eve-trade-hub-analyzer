@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 use tracing::warn;
 
 use crate::Config;
-use crate::error::AppError;
+use eve_core::AppError;
 
 const DEFAULT_BASE_URL: &str = "https://esi.evetech.net/latest";
 const ERROR_LIMIT_THRESHOLD: u32 = 10;

@@ -23,7 +23,7 @@ use tokio::sync::Mutex;
 use tracing::{info, instrument, warn};
 
 use crate::Config;
-use crate::error::{AppError, AppResult};
+use eve_core::{AppError, AppResult};
 
 /// Two scopes — and only these two — per PROMPT.md §6.
 const SCOPES: [&str; 2] = [

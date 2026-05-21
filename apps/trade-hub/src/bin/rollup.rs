@@ -8,8 +8,9 @@
 
 use chrono::{Duration, NaiveDate, Utc};
 use clap::Parser;
-use eve_trade_hub_analyzer::error::{AppError, AppResult};
-use eve_trade_hub_analyzer::{Config, db, telemetry};
+use eve_core::{AppError, AppResult};
+use eve_trade_hub_analyzer::{Config, db};
+use eve_core::telemetry;
 use sqlx::PgPool;
 use tracing::info;
 
