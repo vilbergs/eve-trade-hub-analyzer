@@ -1,8 +1,8 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 
-use super::client::{EsiClient, EsiError, EsiResponse};
+use crate::client::{EsiClient, EsiError, EsiResponse};
 
 const PAGE_CONCURRENCY: usize = 4;
 
@@ -56,33 +56,6 @@ pub async fn structure_orders(
         Some(access_token.to_string()),
     )
     .await
-}
-
-/// One daily history row, as returned by
-/// `GET /markets/{region_id}/history/?type_id={type_id}`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HistoryEntry {
-    pub date: NaiveDate,
-    pub average: f64,
-    pub highest: f64,
-    pub lowest: f64,
-    pub volume: i64,
-    pub order_count: i64,
-}
-
-/// Full price/volume history for a (region, type) pair. Not paginated
-/// — ESI returns the whole window in one body.
-pub async fn region_history(
-    client: &EsiClient,
-    region_id: i64,
-    type_id: i64,
-) -> Result<Vec<HistoryEntry>, EsiError> {
-    let path = format!("/markets/{region_id}/history/");
-    let type_str = type_id.to_string();
-    let resp: EsiResponse<Vec<HistoryEntry>> = client
-        .get_json(&path, &[("type_id", type_str.as_str())])
-        .await?;
-    Ok(resp.body)
 }
 
 async fn paged<T: serde::de::DeserializeOwned + Send + 'static>(

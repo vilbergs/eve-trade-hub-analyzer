@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
-use eve_trade_hub_analyzer::esi::{EsiClient, EsiError, market};
+use eve_esi::{EsiClient, EsiError, market};
 use serde_json::json;
 use wiremock::matchers::{header, method, path, query_param};
 use wiremock::{Mock, MockServer, Request, Respond, ResponseTemplate};
@@ -37,7 +37,7 @@ async fn injects_user_agent_on_request() {
         .await;
 
     let client = client_for(&server);
-    let resp: eve_trade_hub_analyzer::esi::EsiResponse<serde_json::Value> =
+    let resp: eve_esi::EsiResponse<serde_json::Value> =
         client.get_json("/ping", &[]).await.unwrap();
     assert_eq!(resp.body["ok"], json!(true));
 }
@@ -70,7 +70,7 @@ async fn retries_on_503_then_succeeds() {
         .await;
 
     let client = client_for(&server);
-    let resp: eve_trade_hub_analyzer::esi::EsiResponse<serde_json::Value> =
+    let resp: eve_esi::EsiResponse<serde_json::Value> =
         client.get_json("/flaky", &[]).await.unwrap();
     assert_eq!(resp.body["ok"], json!(true));
     assert_eq!(calls.load(Ordering::SeqCst), 3);

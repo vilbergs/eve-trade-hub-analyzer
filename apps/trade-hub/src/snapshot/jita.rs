@@ -11,8 +11,8 @@ use tracing::{info, instrument};
 
 use crate::Config;
 use eve_core::AppResult;
-use crate::esi::EsiClient;
-use crate::esi::market::region_orders;
+use eve_esi::EsiClient;
+use eve_esi::market::region_orders;
 
 use super::{RunSummary, ensure_partitions, filter_to_tracked, hub::write_orders, tracked_types};
 

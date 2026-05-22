@@ -15,7 +15,7 @@ use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 use sqlx::PgPool;
 
 use eve_core::AppResult;
-use crate::esi::market::MarketOrder;
+use eve_esi::market::MarketOrder;
 
 #[derive(Debug, Clone)]
 pub struct RunSummary {

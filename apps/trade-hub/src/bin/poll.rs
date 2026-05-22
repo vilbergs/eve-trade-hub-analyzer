@@ -11,7 +11,7 @@
 
 use chrono::{Datelike, Utc};
 use clap::Parser;
-use eve_trade_hub_analyzer::esi::EsiClient;
+use eve_esi::EsiClient;
 use eve_trade_hub_analyzer::esi::auth::{AccessTokenCache, AuthEndpoints};
 use eve_trade_hub_analyzer::snapshot::{drop_old_partitions, ensure_partitions, hub, jita};
 use eve_trade_hub_analyzer::{Config, db};
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .user_agent(&config.eve_user_agent)
         .gzip(true)
         .build()?;
-    let esi = EsiClient::new(&config)?;
+    let esi = EsiClient::new(&config.eve_user_agent)?;
     let cache = AccessTokenCache::new();
     let endpoints = AuthEndpoints::production();
 

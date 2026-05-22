@@ -33,6 +33,7 @@ path = "src/bin/sheets.rs"
 
 [dependencies]
 eve-core = { path = "../../crates/eve-core" }
+eve-esi = { path = "../../crates/eve-esi" }
 
 tokio.workspace = true
 reqwest.workspace = true

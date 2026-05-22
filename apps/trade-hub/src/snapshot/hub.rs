@@ -9,9 +9,9 @@ use tracing::{error, info, instrument, warn};
 
 use crate::Config;
 use eve_core::{AppError, AppResult};
-use crate::esi::EsiClient;
+use eve_esi::EsiClient;
 use crate::esi::auth::{AccessTokenCache, AuthEndpoints, get_access_token};
-use crate::esi::market::{MarketOrder, structure_orders};
+use eve_esi::market::{MarketOrder, structure_orders};
 
 use super::{RunSummary, ensure_partitions, filter_to_tracked, tracked_types};
 

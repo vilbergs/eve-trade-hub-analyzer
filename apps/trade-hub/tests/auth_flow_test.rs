@@ -59,6 +59,7 @@ fn test_config() -> Config {
         eve_user_agent: "eve-trade-hub-analyzer-tests/0.1.0".into(),
         jita_region_id: 10_000_002,
         poll_interval: Duration::from_secs(300),
+        google: None,
     }
 }
 

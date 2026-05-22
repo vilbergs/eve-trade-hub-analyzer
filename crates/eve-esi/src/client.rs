@@ -9,7 +9,6 @@ use thiserror::Error;
 use tokio::sync::Mutex;
 use tracing::warn;
 
-use crate::Config;
 use eve_core::AppError;
 
 const DEFAULT_BASE_URL: &str = "https://esi.evetech.net/latest";
@@ -61,9 +60,9 @@ struct Inner {
 }
 
 impl EsiClient {
-    pub fn new(config: &Config) -> Result<Self, AppError> {
+    pub fn new(user_agent: &str) -> Result<Self, AppError> {
         let http = reqwest::Client::builder()
-            .user_agent(&config.eve_user_agent)
+            .user_agent(user_agent)
             .gzip(true)
             .build()?;
         Ok(Self::with_http_and_base(http, DEFAULT_BASE_URL.to_string()))
