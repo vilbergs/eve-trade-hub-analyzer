@@ -610,6 +610,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "eve-sde"
+version = "0.1.0"
+dependencies = [
+ "eve-core",
+ "reqwest",
+ "sha2",
+ "sqlx",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "eve-trade-hub-analyzer"
 version = "0.1.0"
 dependencies = [
@@ -621,6 +633,7 @@ dependencies = [
  "eve-auth",
  "eve-core",
  "eve-esi",
+ "eve-sde",
  "futures",
  "jsonwebtoken",
  "oauth2",

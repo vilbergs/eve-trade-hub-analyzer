@@ -35,6 +35,7 @@ path = "src/bin/sheets.rs"
 eve-core = { path = "../../crates/eve-core" }
 eve-esi = { path = "../../crates/eve-esi" }
 eve-auth = { path = "../../crates/eve-auth" }
+eve-sde = { path = "../../crates/eve-sde" }
 
 tokio.workspace = true
 reqwest.workspace = true

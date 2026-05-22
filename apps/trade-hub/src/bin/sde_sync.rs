@@ -1,6 +1,6 @@
 use clap::Parser;
-use eve_trade_hub_analyzer::{Config, db, sde};
 use eve_core::telemetry;
+use eve_trade_hub_analyzer::{Config, db};
 
 /// Download the latest Fuzzwork SDE CSVs and load type/group/market-group tables.
 #[derive(Parser, Debug)]
@@ -29,11 +29,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await?;
     }
 
-    match sde::sync(&pool, &http).await? {
-        sde::SdeReport::UpToDate { version } => {
+    match eve_sde::sync(&pool, &http).await? {
+        eve_sde::SdeReport::UpToDate { version } => {
             tracing::info!(%version, "SDE up to date");
         }
-        sde::SdeReport::Loaded {
+        eve_sde::SdeReport::Loaded {
             version,
             categories,
             groups,
