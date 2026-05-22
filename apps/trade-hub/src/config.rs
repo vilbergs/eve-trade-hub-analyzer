@@ -1,6 +1,7 @@
 use std::env;
 use std::time::Duration;
 
+use eve_auth::EveSsoConfig;
 use eve_core::{AppError, AppResult};
 
 #[derive(Debug, Clone)]
@@ -44,6 +45,14 @@ impl Config {
             ),
             google: GoogleConfig::from_env()?,
         })
+    }
+
+    pub fn eve_sso(&self) -> EveSsoConfig {
+        EveSsoConfig {
+            client_id: self.eve_client_id.clone(),
+            client_secret: self.eve_client_secret.clone(),
+            callback_url: self.eve_callback_url.clone(),
+        }
     }
 
     pub fn google(&self) -> AppResult<&GoogleConfig> {

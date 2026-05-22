@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/eve-core",
     "crates/eve-esi",
+    "crates/eve-auth",
     "apps/trade-hub",
 ]
 

@@ -22,8 +22,19 @@ use sqlx::PgPool;
 use tokio::sync::Mutex;
 use tracing::{info, instrument, warn};
 
-use crate::Config;
 use eve_core::{AppError, AppResult};
+
+/// Caller-supplied identity for the EVE SSO OAuth2 client.
+///
+/// Apps build this from whatever configuration source they use
+/// (env vars, secrets store, etc.) — `eve-auth` itself reads nothing
+/// from the environment.
+#[derive(Debug, Clone)]
+pub struct EveSsoConfig {
+    pub client_id: String,
+    pub client_secret: String,
+    pub callback_url: String,
+}
 
 /// Two scopes — and only these two — per PROMPT.md §6.
 const SCOPES: [&str; 2] = [
@@ -70,16 +81,16 @@ type OauthClient = BasicClient<
     EndpointSet,    // token_uri
 >;
 
-fn build_oauth(config: &Config, endpoints: &AuthEndpoints) -> AppResult<OauthClient> {
+fn build_oauth(config: &EveSsoConfig, endpoints: &AuthEndpoints) -> AppResult<OauthClient> {
     let auth = AuthUrl::new(endpoints.authorize_url.clone())
         .map_err(|e| AppError::Auth(format!("authorize_url invalid: {e}")))?;
     let token = TokenUrl::new(endpoints.token_url.clone())
         .map_err(|e| AppError::Auth(format!("token_url invalid: {e}")))?;
-    let redirect = RedirectUrl::new(config.eve_callback_url.clone())
+    let redirect = RedirectUrl::new(config.callback_url.clone())
         .map_err(|e| AppError::Auth(format!("redirect_url invalid: {e}")))?;
     Ok(
-        BasicClient::new(ClientId::new(config.eve_client_id.clone()))
-            .set_client_secret(ClientSecret::new(config.eve_client_secret.clone()))
+        BasicClient::new(ClientId::new(config.client_id.clone()))
+            .set_client_secret(ClientSecret::new(config.client_secret.clone()))
             .set_auth_uri(auth)
             .set_token_uri(token)
             .set_redirect_uri(redirect),
@@ -95,7 +106,7 @@ pub struct LoginStart {
 
 /// Step 1: generate a PKCE verifier + CSRF token and build the authorize URL
 /// the user opens in their browser.
-pub fn start_login(config: &Config, endpoints: &AuthEndpoints) -> AppResult<LoginStart> {
+pub fn start_login(config: &EveSsoConfig, endpoints: &AuthEndpoints) -> AppResult<LoginStart> {
     let client = build_oauth(config, endpoints)?;
     let (challenge, verifier) = PkceCodeChallenge::new_random_sha256();
     let (url, csrf) = client
@@ -123,7 +134,7 @@ pub struct CharacterRow {
 /// against JWKS, fetch the corporation_id, and upsert `characters`.
 #[instrument(skip_all)]
 pub async fn complete_login(
-    config: &Config,
+    config: &EveSsoConfig,
     endpoints: &AuthEndpoints,
     pool: &PgPool,
     http: &reqwest::Client,
@@ -307,7 +318,7 @@ impl AccessTokenCache {
 #[instrument(skip_all, fields(character_id))]
 pub async fn get_access_token(
     cache: &AccessTokenCache,
-    config: &Config,
+    config: &EveSsoConfig,
     endpoints: &AuthEndpoints,
     pool: &PgPool,
     http: &reqwest::Client,

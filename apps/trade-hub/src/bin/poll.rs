@@ -12,7 +12,7 @@
 use chrono::{Datelike, Utc};
 use clap::Parser;
 use eve_esi::EsiClient;
-use eve_trade_hub_analyzer::esi::auth::{AccessTokenCache, AuthEndpoints};
+use eve_auth::{AccessTokenCache, AuthEndpoints};
 use eve_trade_hub_analyzer::snapshot::{drop_old_partitions, ensure_partitions, hub, jita};
 use eve_trade_hub_analyzer::{Config, db};
 use eve_core::telemetry;

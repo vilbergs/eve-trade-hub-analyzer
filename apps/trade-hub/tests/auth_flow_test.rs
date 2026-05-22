@@ -15,7 +15,7 @@
 use std::time::Duration;
 
 use eve_trade_hub_analyzer::db;
-use eve_trade_hub_analyzer::esi::auth::{AccessTokenCache, AuthEndpoints, get_access_token};
+use eve_auth::{AccessTokenCache, AuthEndpoints, get_access_token};
 use eve_trade_hub_analyzer::{AppError, Config};
 use serde_json::json;
 use sqlx::PgPool;
@@ -117,7 +117,7 @@ async fn refresh_returns_new_token_rotates_refresh_and_caches() {
     let eps = endpoints(&server);
     let http = reqwest::Client::new();
 
-    let token = get_access_token(&cache, &cfg, &eps, &pool, &http, SEEDED_CHARACTER_REFRESH)
+    let token = get_access_token(&cache, &cfg.eve_sso(), &eps, &pool, &http, SEEDED_CHARACTER_REFRESH)
         .await
         .unwrap();
     assert_eq!(token, "fresh_access_token_value");
@@ -132,7 +132,7 @@ async fn refresh_returns_new_token_rotates_refresh_and_caches() {
     assert_eq!(current_refresh, "rotated_refresh_token");
 
     // Second call within TTL is served from cache (still expect 1 token POST).
-    let token2 = get_access_token(&cache, &cfg, &eps, &pool, &http, SEEDED_CHARACTER_REFRESH)
+    let token2 = get_access_token(&cache, &cfg.eve_sso(), &eps, &pool, &http, SEEDED_CHARACTER_REFRESH)
         .await
         .unwrap();
     assert_eq!(token2, "fresh_access_token_value");
@@ -168,7 +168,7 @@ async fn invalid_grant_flips_status_to_needs_reauth() {
     let eps = endpoints(&server);
     let http = reqwest::Client::new();
 
-    let err = get_access_token(&cache, &cfg, &eps, &pool, &http, SEEDED_CHARACTER_INVALID)
+    let err = get_access_token(&cache, &cfg.eve_sso(), &eps, &pool, &http, SEEDED_CHARACTER_INVALID)
         .await
         .unwrap_err();
     assert!(matches!(err, AppError::Auth(_)), "got: {err:?}");

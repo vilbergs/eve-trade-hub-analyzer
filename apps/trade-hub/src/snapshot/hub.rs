@@ -10,7 +10,7 @@ use tracing::{error, info, instrument, warn};
 use crate::Config;
 use eve_core::{AppError, AppResult};
 use eve_esi::EsiClient;
-use crate::esi::auth::{AccessTokenCache, AuthEndpoints, get_access_token};
+use eve_auth::{AccessTokenCache, AuthEndpoints, get_access_token};
 use eve_esi::market::{MarketOrder, structure_orders};
 
 use super::{RunSummary, ensure_partitions, filter_to_tracked, tracked_types};
@@ -48,7 +48,8 @@ pub async fn poll_hub(
     let character_id = character_id.ok_or_else(|| {
         AppError::Auth("no active linked character; run `cargo run --bin auth`".into())
     })?;
-    let token = get_access_token(cache, config, endpoints, pool, http, character_id).await?;
+    let sso = config.eve_sso();
+    let token = get_access_token(cache, &sso, endpoints, pool, http, character_id).await?;
 
     let mut summaries = Vec::with_capacity(stations.len());
     for station_id in stations {

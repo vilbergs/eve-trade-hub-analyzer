@@ -16,7 +16,7 @@ use axum::response::{Html, Redirect};
 use axum::routing::get;
 use clap::Parser;
 use eve_core::{AppError, AppResult};
-use eve_trade_hub_analyzer::esi::auth::{
+use eve_auth::{
     AuthEndpoints, CharacterRow, LoginStart, complete_login, start_login,
 };
 use eve_trade_hub_analyzer::{Config, db};
@@ -47,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (completion_tx, completion_rx) = oneshot::channel::<AppResult<CharacterRow>>();
 
     let state = AppState {
-        config: Arc::new(config),
+        config: Arc::new(config.eve_sso()),
         endpoints: Arc::new(AuthEndpoints::production()),
         pool: pool.clone(),
         http: http.clone(),
@@ -93,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[derive(Clone)]
 struct AppState {
-    config: Arc<Config>,
+    config: Arc<eve_auth::EveSsoConfig>,
     endpoints: Arc<AuthEndpoints>,
     pool: PgPool,
     http: reqwest::Client,

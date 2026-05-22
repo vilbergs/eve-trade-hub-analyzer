@@ -566,6 +566,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "eve-auth"
+version = "0.1.0"
+dependencies = [
+ "eve-core",
+ "jsonwebtoken",
+ "oauth2",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "eve-core"
 version = "0.1.0"
 dependencies = [
@@ -602,6 +618,7 @@ dependencies = [
  "clap",
  "comfy-table",
  "dotenvy",
+ "eve-auth",
  "eve-core",
  "eve-esi",
  "futures",
