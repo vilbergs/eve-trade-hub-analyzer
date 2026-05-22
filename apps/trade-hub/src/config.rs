@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use eve_auth::EveSsoConfig;
 use eve_core::{AppError, AppResult};
+use eve_sheets::GoogleConfig;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -14,19 +15,6 @@ pub struct Config {
     pub jita_region_id: i64,
     pub poll_interval: Duration,
     pub google: Option<GoogleConfig>,
-}
-
-/// Service-account-based Google Sheets config. Optional so binaries
-/// that don't touch Sheets (poll, rollup, report, …) can still boot
-/// without these env vars set. Auth is fully headless — share the
-/// target spreadsheet with the service account's `client_email`.
-#[derive(Debug, Clone)]
-pub struct GoogleConfig {
-    /// Path to the service account JSON key file on disk.
-    pub service_account_key_path: String,
-    /// Spreadsheet ID (the long string between `/d/` and `/edit` in a
-    /// Sheets URL).
-    pub spreadsheet_id: String,
 }
 
 impl Config {
@@ -43,7 +31,7 @@ impl Config {
             poll_interval: Duration::from_secs(
                 optional_parse::<u64>("POLL_INTERVAL_SECS")?.unwrap_or(300),
             ),
-            google: GoogleConfig::from_env()?,
+            google: google_config_from_env()?,
         })
     }
 
@@ -65,20 +53,18 @@ impl Config {
     }
 }
 
-impl GoogleConfig {
-    fn from_env() -> AppResult<Option<Self>> {
-        let key = optional("GOOGLE_SERVICE_ACCOUNT_KEY_PATH");
-        let sheet = optional("GOOGLE_SPREADSHEET_ID");
-        match (key, sheet) {
-            (None, None) => Ok(None),
-            (Some(service_account_key_path), Some(spreadsheet_id)) => Ok(Some(Self {
-                service_account_key_path,
-                spreadsheet_id,
-            })),
-            _ => Err(AppError::Config(
-                "Google config is partial — set both GOOGLE_SERVICE_ACCOUNT_KEY_PATH and GOOGLE_SPREADSHEET_ID, or neither".into(),
-            )),
-        }
+fn google_config_from_env() -> AppResult<Option<GoogleConfig>> {
+    let key = optional("GOOGLE_SERVICE_ACCOUNT_KEY_PATH");
+    let sheet = optional("GOOGLE_SPREADSHEET_ID");
+    match (key, sheet) {
+        (None, None) => Ok(None),
+        (Some(service_account_key_path), Some(spreadsheet_id)) => Ok(Some(GoogleConfig {
+            service_account_key_path,
+            spreadsheet_id,
+        })),
+        _ => Err(AppError::Config(
+            "Google config is partial — set both GOOGLE_SERVICE_ACCOUNT_KEY_PATH and GOOGLE_SPREADSHEET_ID, or neither".into(),
+        )),
     }
 }
 

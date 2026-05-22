@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use tracing::instrument;
 
-use crate::config::GoogleConfig;
+use crate::GoogleConfig;
 use eve_core::{AppError, AppResult};
 
 const SCOPE: &str = "https://www.googleapis.com/auth/spreadsheets";

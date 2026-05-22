@@ -14,12 +14,21 @@
 //!      `client_email` (Editor access).
 
 use clap::{Parser, Subcommand};
-use eve_trade_hub_analyzer::analysis::{seeding, stock_health, stock_health_history};
 use eve_core::AppResult;
-use eve_trade_hub_analyzer::sheets::auth::{AccessTokenCache, get_access_token};
-use eve_trade_hub_analyzer::sheets::push_report;
-use eve_trade_hub_analyzer::{Config, db};
 use eve_core::telemetry;
+use eve_sheets::auth::{AccessTokenCache, get_access_token};
+use eve_sheets::push_report;
+use eve_trade_hub_analyzer::analysis::output::Renderable;
+use eve_trade_hub_analyzer::analysis::{seeding, stock_health, stock_health_history};
+use eve_trade_hub_analyzer::{Config, db};
+
+fn rows_of<T: Renderable>(items: &[T]) -> Vec<Vec<String>> {
+    items.iter().map(|r| r.cells()).collect()
+}
+
+fn headers_for<T: Renderable>(_: &[T]) -> Vec<&'static str> {
+    T::headers()
+}
 
 /// Push stock-health / seeding / stock-health-history reports to Google
 /// Sheets, one tab per report.
@@ -90,7 +99,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let rows = stock_health::run(&pool, station, limit).await?;
             let id = pick_spreadsheet_id(&config, spreadsheet_id)?;
             let token = mint_token(&config, &http).await?;
-            push_report(&http, &token, &id, &tab, &rows).await?;
+            let headers = headers_for(&rows);
+            push_report(&http, &token, &id, &tab, &headers, rows_of(&rows)).await?;
             println!(
                 "Pushed {} stock_health row(s) to spreadsheet {id} tab '{tab}'.",
                 rows.len()
@@ -113,7 +123,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await?;
             let id = pick_spreadsheet_id(&config, spreadsheet_id)?;
             let token = mint_token(&config, &http).await?;
-            push_report(&http, &token, &id, &tab, &rows).await?;
+            let headers = headers_for(&rows);
+            push_report(&http, &token, &id, &tab, &headers, rows_of(&rows)).await?;
             println!(
                 "Pushed {} seeding row(s) to spreadsheet {id} tab '{tab}'.",
                 rows.len()
@@ -129,7 +140,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let rows = stock_health_history::run(&pool, type_id, station, days).await?;
             let id = pick_spreadsheet_id(&config, spreadsheet_id)?;
             let token = mint_token(&config, &http).await?;
-            push_report(&http, &token, &id, &tab, &rows).await?;
+            let headers = headers_for(&rows);
+            push_report(&http, &token, &id, &tab, &headers, rows_of(&rows)).await?;
             println!(
                 "Pushed {} stock_health_history row(s) to spreadsheet {id} tab '{tab}'.",
                 rows.len()

@@ -1,7 +1,6 @@
 pub mod analysis;
 pub mod config;
 pub mod db;
-pub mod sheets;
 pub mod snapshot;
 
 pub use config::Config;
