@@ -1,0 +1,17 @@
+[package]
+name = "eve-market"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+eve-core = { path = "../eve-core" }
+eve-esi = { path = "../eve-esi" }
+
+tokio.workspace = true
+sqlx.workspace = true
+chrono.workspace = true
+tracing.workspace = true

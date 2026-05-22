@@ -120,7 +120,7 @@ hub_p5 AS (
 ),
 consumption AS (
     SELECT type_id, location_id, SUM(units_consumed)::BIGINT AS units_30d
-    FROM market_daily_agg
+    FROM market_orders_daily
     WHERE day >= (now() - INTERVAL '30 days')::DATE
     GROUP BY type_id, location_id
 )

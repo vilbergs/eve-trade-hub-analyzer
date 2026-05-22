@@ -6,6 +6,7 @@ members = [
     "crates/eve-auth",
     "crates/eve-sde",
     "crates/eve-sheets",
+    "crates/eve-market",
     "apps/trade-hub",
 ]
 

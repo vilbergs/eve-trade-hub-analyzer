@@ -4,7 +4,7 @@
 //! Lifecycle:
 //! - On startup: ensure partitions, then spawn hub + jita tasks.
 //! - Each task ticks on its own `POLL_INTERVAL_SECS` interval; errors are
-//!   recorded in `snapshot_runs` by the pollers, the tasks keep going.
+//!   recorded in `market_poll_runs` by the pollers, the tasks keep going.
 //! - Once per UTC day: ensure new partitions, drop partitions whose week
 //!   ended more than 30 days ago.
 //! - SIGINT / SIGTERM: cancel both tasks and exit cleanly.
