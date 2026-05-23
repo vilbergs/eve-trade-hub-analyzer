@@ -7,6 +7,7 @@
     let { hiddenKinds, onToggleKind }: Props = $props();
 
     const items = [
+        { cls: "mat-t2", kind: "t2_product", text: "T2 Product" },
         { cls: "mat-comp", kind: "component", text: "Component" },
         { cls: "mat-react", kind: "reaction", text: "Reaction" },
         { cls: "mat-pi", kind: "pi", text: "PI" },

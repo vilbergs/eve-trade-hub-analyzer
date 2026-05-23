@@ -10,6 +10,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
+    "@xyflow/svelte": "^1.5.2",
     "svelte": "^5.0.0"
   },
   "devDependencies": {

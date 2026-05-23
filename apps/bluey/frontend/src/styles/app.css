@@ -26,13 +26,11 @@
     --text-dim: oklch(0.72 0.01 250);
     --text-faint: oklch(0.55 0.01 250);
 
-    --accent-h: 192 90% 62%;
-    --accent2-h: 35 92% 62%;
-    --accent: hsl(var(--accent-h));
-    --accent-soft: hsl(var(--accent-h) / 0.15);
-    --accent-line: hsl(var(--accent-h) / 0.55);
-    --accent2: hsl(var(--accent2-h));
-    --accent2-soft: hsl(var(--accent2-h) / 0.14);
+    --accent: oklch(0.76 0.14 220);
+    --accent-soft: oklch(0.76 0.14 220 / 0.15);
+    --accent-line: oklch(0.76 0.14 220 / 0.55);
+    --accent2: oklch(0.78 0.16 60);
+    --accent2-soft: oklch(0.78 0.16 60 / 0.14);
 
     --c-raw-min: oklch(0.7 0.11 220);
     --c-raw-moon: oklch(0.74 0.13 290);
@@ -186,7 +184,7 @@ body {
     border-radius: var(--radius);
     z-index: 200;
     list-style: none;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 24px oklch(0 0 0 / 0.4);
 }
 .fp-autoc-opt {
     display: flex;
@@ -208,68 +206,6 @@ body {
 }
 .fp-autoc-opt.is-sel .fp-autoc-opt-name {
     color: var(--accent);
-}
-
-/* ─── Controls ──────────────────────────────────────────────────── */
-.fp-controls {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-.fp-ctrl {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.fp-ctrl-k {
-    font-family: var(--f-mono);
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-faint);
-    letter-spacing: 0.06em;
-}
-.fp-ctrl input {
-    width: 56px;
-    padding: 5px 8px;
-    background: var(--surface-1);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: var(--f-mono);
-    font-size: 13px;
-    text-align: center;
-    outline: none;
-}
-.fp-ctrl input:focus {
-    border-color: var(--accent-line);
-}
-.fp-ctrl-stepper {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    overflow: hidden;
-}
-.fp-ctrl-stepper button {
-    padding: 4px 8px;
-    background: var(--surface-1);
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-size: 14px;
-}
-.fp-ctrl-stepper button:hover {
-    background: var(--surface-2);
-}
-.fp-ctrl-stepper-v {
-    padding: 4px 8px;
-    font-family: var(--f-mono);
-    font-size: 12px;
-    color: var(--text);
-    min-width: 36px;
-    text-align: center;
-    background: var(--surface-0);
 }
 
 /* ─── Legend ─────────────────────────────────────────────────────── */
@@ -300,7 +236,7 @@ body {
         background 0.15s;
 }
 .fp-legend-item:hover {
-    background: var(--surface-1, rgba(255, 255, 255, 0.06));
+    background: var(--surface-1, oklch(1 0 0 / 0.06));
 }
 .fp-legend-item.is-hidden {
     opacity: 0.35;
@@ -334,6 +270,9 @@ body {
 }
 .fp-legend-swatch.mat-min {
     background: var(--c-raw-min);
+}
+.fp-legend-swatch.mat-t2 {
+    background: var(--c-t2);
 }
 .fp-legend-sep {
     width: 1px;
@@ -381,64 +320,71 @@ body {
     position: relative;
     overflow: hidden;
 }
-.fp-canvas-viewport {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    cursor: grab;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-}
-.fp-canvas-viewport:active {
-    cursor: grabbing;
-}
-.fp-canvas-scaled {
-    will-change: transform;
-    position: relative;
-}
 
-/* ─── Columns ───────────────────────────────────────────────────── */
-.fp-cols {
-    display: flex;
-    gap: var(--col-gap);
-    padding: 60px 60px 80px;
-    align-items: flex-start;
+/* ─── Svelte Flow theming ───────────────────────────────────────── */
+.svelte-flow {
+    --xy-background-color-default: var(--bg);
+    --xy-background-pattern-dots-color-default: var(--line);
+    --xy-background-pattern-lines-color-default: var(--line);
+    --xy-background-pattern-cross-color-default: var(--line);
+    --xy-controls-button-background-color-default: var(--surface-0);
+    --xy-controls-button-background-color-hover-default: var(--surface-2);
+    --xy-controls-button-color-default: var(--text-dim);
+    --xy-controls-button-color-hover-default: var(--text);
+    --xy-controls-button-border-color-default: var(--line);
+    --xy-controls-box-shadow-default: 0 2px 8px oklch(0 0 0 / 0.3);
+    --xy-edge-stroke-default: color-mix(in oklab, var(--line-strong) 95%, transparent);
+    --xy-edge-stroke-width-default: 1.25;
+    --xy-attribution-background-color-default: transparent;
 }
-.fp-col {
-    display: flex;
-    flex-direction: column;
-    gap: var(--node-gap);
-    min-width: var(--col-w);
+.svelte-flow__node {
+    width: var(--col-w);
 }
-.fp-col-head {
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    border-bottom: 1px solid var(--line);
+.svelte-flow__handle {
+    opacity: 0;
+    pointer-events: none;
 }
-.fp-col-title {
-    font-family: var(--f-mono);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-dim);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-.fp-col-sub {
-    font-size: 10px;
+.svelte-flow__attribution a {
     color: var(--text-faint);
-    margin-top: 2px;
 }
-.fp-col-body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--node-gap);
+.fp-collapse-btn {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: color-mix(in oklab, var(--surface-0) 92%, transparent);
+    color: var(--text-dim);
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition:
+        background 0.15s,
+        border-color 0.15s,
+        color 0.15s;
+}
+.fp-collapse-btn:hover {
+    background: var(--surface-2);
+    border-color: var(--line-strong);
+    color: var(--text);
+}
+.fp-flow-edge .svelte-flow__edge-path {
+    stroke: var(--accent);
+    stroke-width: 2.25;
+    opacity: 1;
+    filter: drop-shadow(0 0 8px oklch(0.76 0.14 220 / 0.8));
+    transition:
+        stroke 0.2s,
+        opacity 0.2s,
+        stroke-width 0.2s;
 }
 
 /* ─── Node cards ────────────────────────────────────────────────── */
 .fp-node {
     position: relative;
-    padding: 10px 14px;
+    padding: 6px 10px;
     background: var(--surface-1);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
@@ -451,7 +397,7 @@ body {
 }
 .fp-node:hover {
     border-color: var(--line-strong);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px oklch(0 0 0 / 0.2);
 }
 .fp-node.is-off {
     opacity: 0.65;
@@ -464,7 +410,7 @@ body {
     border-color: var(--accent);
     box-shadow:
         0 0 0 2px var(--accent-soft),
-        0 4px 12px rgba(0, 0, 0, 0.3);
+        0 4px 12px oklch(0 0 0 / 0.3);
 }
 
 .fp-node-kind-row {
@@ -479,7 +425,7 @@ body {
     letter-spacing: 0.08em;
     color: var(--text-faint);
     text-transform: uppercase;
-    margin-bottom: 2px;
+    margin-bottom: 0;
 }
 .fp-node-qty {
     font-family: var(--f-mono);
@@ -491,12 +437,17 @@ body {
     font-size: 13px;
     font-weight: 600;
     color: var(--text);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* ─── Inline recipe/materials list ──────────────────────────────── */
 .fp-recipe {
-    margin-top: 8px;
-    padding-top: 6px;
+    margin-top: 4px;
+    padding-top: 4px;
     border-top: 1px solid var(--line);
 }
 .fp-recipe-label {
@@ -518,7 +469,7 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 2px 0;
+    padding: 0;
     font-size: 11px;
     color: var(--text-dim);
 }
@@ -551,6 +502,17 @@ body {
 .fp-recipe-row.mat-ram::before {
     background: var(--c-ram);
 }
+.fp-recipe-tier {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--c-raw-pl);
+    background: color-mix(in oklab, var(--c-raw-pl) 18%, transparent);
+    padding: 1px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
 .fp-recipe-name {
     flex: 1;
     min-width: 0;
@@ -572,9 +534,7 @@ body {
 .fp-node.n-raw-moon {
     border-left: 3px solid var(--c-raw-moon);
 }
-.fp-node.n-raw-pl {
-    border-left: 3px solid var(--c-raw-pl);
-}
+
 .fp-node.n-react {
     border-left: 3px solid var(--c-react);
 }
@@ -605,8 +565,8 @@ body {
 }
 .fp-node.n-t2.is-focus {
     box-shadow:
-        0 0 0 2px hsl(192 90% 62% / 0.3),
-        0 4px 16px rgba(0, 0, 0, 0.4);
+        0 0 0 2px oklch(0.76 0.14 220 / 0.3),
+        0 4px 16px oklch(0 0 0 / 0.4);
 }
 
 /* ─── Node excluded state ─────────────────────────────────────── */
@@ -657,7 +617,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0;
-    margin-top: 6px;
+    margin-top: 4px;
     background: var(--surface-0);
     border: 1px solid var(--line);
     border-radius: 3px;
@@ -687,7 +647,7 @@ body {
     color: var(--accent);
 }
 .fp-state-label.is-current.fp-state-label--buy {
-    background: hsl(var(--accent2-h) / 0.15);
+    background: var(--accent2-soft);
     color: var(--accent2);
 }
 .fp-state-label.is-current.fp-state-label--off {
@@ -916,75 +876,11 @@ body {
     background: var(--line-strong);
 }
 
-/* ─── SVG Edge Lines ────────────────────────────────────────────── */
-.fp-edges {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 5;
-    overflow: visible;
-}
-.fp-edge {
-    fill: none;
-    stroke: color-mix(in oklab, var(--line-strong) 95%, transparent);
-    stroke-width: 1.25;
-    color: var(--line-strong);
-    opacity: 0.85;
-    transition:
-        stroke 0.2s,
-        opacity 0.2s,
-        stroke-width 0.2s;
-}
-.fp-edge.is-dim {
-    opacity: 0.22;
-}
-.fp-edge.is-hot {
-    stroke: var(--accent);
-    color: var(--accent);
-    stroke-width: 2.25;
-    opacity: 1;
-    filter: drop-shadow(0 0 8px hsl(var(--accent-h) / 0.8));
-}
-
 /* ─── Node focus highlight ──────────────────────────────────────── */
 .fp-node.is-node-focused {
     outline: 1.5px solid var(--accent);
     outline-offset: 2px;
-    box-shadow: 0 0 12px hsl(var(--accent-h) / 0.25);
-}
-
-/* ─── Canvas Controls ───────────────────────────────────────────── */
-.fp-canvas-controls {
-    position: absolute;
-    bottom: 16px;
-    right: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    z-index: 20;
-}
-.fp-canvas-ctrl {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius);
-    border: 1px solid var(--line);
-    background: color-mix(in oklab, var(--surface-0) 92%, transparent);
-    color: var(--text-dim);
-    cursor: pointer;
-    font-family: var(--f-mono);
-    font-size: 16px;
-    backdrop-filter: blur(6px);
-    transition:
-        background 0.15s,
-        border-color 0.15s,
-        color 0.15s;
-}
-.fp-canvas-ctrl:hover {
-    background: var(--surface-2);
-    border-color: var(--line-strong);
-    color: var(--text);
+    box-shadow: 0 0 12px oklch(0.76 0.14 220 / 0.25);
 }
 
 /* ── Current Focus card (header right) ────────────────────── */

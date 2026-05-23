@@ -20,20 +20,35 @@
         return n.toLocaleString();
     }
 
-    // Group BOM lines by a simple category (we'll infer from the node kind when the backend provides it)
-    // For now, just show buy vs build sections
-    function sortByCost(lines: BomLineWithPrice[]): BomLineWithPrice[] {
-        return [...lines].sort(
-            (a, b) => (b.line_cost ?? 0) - (a.line_cost ?? 0),
-        );
-    }
+    // Memoized sorted lists
+    let sortedBuy = $derived(
+        bom
+            ? [...bom.buy].sort(
+                  (a, b) => (b.line_cost ?? 0) - (a.line_cost ?? 0),
+              )
+            : [],
+    );
+    let sortedBuild = $derived(
+        bom
+            ? [...bom.build].sort(
+                  (a, b) => (b.line_cost ?? 0) - (a.line_cost ?? 0),
+              )
+            : [],
+    );
+
+    let copied = $state(false);
 
     function copyMultiBuy() {
         if (!bom) return;
         const text = bom.buy
             .map((l) => `${l.name || `Type ${l.type_id}`} ${l.quantity}`)
             .join("\n");
-        navigator.clipboard.writeText(text);
+        navigator.clipboard.writeText(text).then(() => {
+            copied = true;
+            setTimeout(() => {
+                copied = false;
+            }, 2000);
+        });
     }
 </script>
 
@@ -83,7 +98,7 @@
                     >
                 </header>
                 <ul>
-                    {#each sortByCost(bom.buy) as line (line.type_id)}
+                    {#each sortedBuy as line (line.type_id)}
                         <li class="fp-bom-row">
                             <div class="fp-bom-row-name">
                                 <span class="fp-bom-row-full"
@@ -113,7 +128,7 @@
                     >
                 </header>
                 <ul>
-                    {#each sortByCost(bom.build) as line (line.type_id)}
+                    {#each sortedBuild as line (line.type_id)}
                         <li class="fp-bom-row">
                             <div class="fp-bom-row-name">
                                 <span class="fp-bom-row-full"
@@ -136,7 +151,7 @@
 
         <footer class="fp-bom-foot">
             <button class="fp-btn fp-btn-ghost" onclick={copyMultiBuy}>
-                Copy multi-buy
+                {copied ? "Copied!" : "Copy multi-buy"}
             </button>
         </footer>
     {:else}

@@ -31,18 +31,17 @@
     let inputEl: HTMLInputElement | undefined = $state(undefined);
 
     // Debounced search
-    let searchTimer: ReturnType<typeof setTimeout> | null = null;
     $effect(() => {
         if (!open) return;
         const q = query;
-        if (searchTimer) clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => {
+        const timer = setTimeout(() => {
             fetchProducts(q)
                 .then((r) => {
                     options = r;
                 })
                 .catch(console.error);
         }, 150);
+        return () => clearTimeout(timer);
     });
 
     // Close on outside click
@@ -134,7 +133,9 @@
                 spellcheck="false"
             />
             <span class="fp-autoc-caret" aria-hidden="true">+</span>
-            {#if open && options.length > 0}
+            {#if open && options.length === 0 && query.length > 0}
+                <div class="fp-autoc-menu fp-autoc-no-results">No results</div>
+            {:else if open && options.length > 0}
                 <ul class="fp-autoc-menu" role="listbox">
                     {#each options as o, i}
                         <li

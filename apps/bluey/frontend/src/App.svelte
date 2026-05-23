@@ -38,6 +38,15 @@
     let excludedSet: Set<number> = $state(new Set());
     let hiddenKinds: Set<string> = $state(new Set());
     let loading = $state(false);
+    let generation = 0;
+
+    // Derived: only changes when the set of type_ids in the ledger changes
+    let ledgerTypeIds = $derived(
+        ledger
+            .map((e) => e.type_id)
+            .sort()
+            .join(","),
+    );
 
     function toggleKind(kind: string) {
         const next = new Set(hiddenKinds);
@@ -70,8 +79,14 @@
     }
 
     function removeProduct(typeId: number) {
+        const removed = ledger.find((e) => e.type_id === typeId);
         ledger = ledger.filter((e) => e.type_id !== typeId);
         chainCache.delete(typeId);
+
+        // Clear focusName if it was the removed product
+        if (removed && focusName === removed.name) {
+            focusName = ledger.length > 0 ? ledger[0].name : null;
+        }
     }
 
     function updateEntry(
@@ -104,9 +119,12 @@
         excludedSet = nextExcluded;
     }
 
-    // Fetch and merge chains whenever ledger changes
+    // Fetch and merge chains only when the set of type_ids changes
     $effect(() => {
+        // Subscribe to ledgerTypeIds so this only re-runs when products are added/removed
+        const _typeIds = ledgerTypeIds;
         const entries = ledger;
+
         if (entries.length === 0) {
             mergedChain = null;
             activeSet = new Set();
@@ -115,6 +133,7 @@
             return;
         }
 
+        const gen = ++generation;
         loading = true;
 
         // Fetch chains we don't have cached yet
@@ -127,6 +146,8 @@
 
         Promise.all(fetchPromises)
             .then(() => {
+                if (gen !== generation) return; // stale
+
                 // Merge all cached chains for current ledger entries
                 const chains = entries
                     .map((e) => chainCache.get(e.type_id))
@@ -135,8 +156,15 @@
                 const merged = mergeChains(chains);
                 mergedChain = merged;
 
-                // Active set: all focal products are "build" by default
-                activeSet = new Set(merged.focal_type_ids);
+                // Only add newly-appeared focal products to activeSet
+                const nextActive = new Set(activeSet);
+                for (const fid of merged.focal_type_ids) {
+                    // Only add if it's not already tracked in either set
+                    if (!nextActive.has(fid) && !excludedSet.has(fid)) {
+                        nextActive.add(fid);
+                    }
+                }
+                activeSet = nextActive;
 
                 // Set focus to first product name if not set
                 if (!focusName && entries.length > 0) {
@@ -145,9 +173,14 @@
             })
             .catch((e) => console.error(e))
             .finally(() => {
-                loading = false;
+                if (gen === generation) {
+                    loading = false;
+                }
             });
     });
+
+    // Generation counter for BOM fetches
+    let bomGeneration = 0;
 
     // Recompute BOM when ledger entries or activeSet change
     $effect(() => {
@@ -173,8 +206,12 @@
             }
         }
 
+        const bomGen = ++bomGeneration;
+
         fetchMultiBom(entries, built)
             .then((data) => {
+                if (bomGen !== bomGeneration) return; // stale
+
                 // Filter out excluded and hidden items from BOM
                 const shouldHide = (typeId: number) =>
                     excluded.has(typeId) || hiddenTypeIds.has(typeId);
@@ -247,7 +284,7 @@
         <div class="fp-foot-canvas-hint">
             <span class="kbd">drag</span> to pan
             <span class="fp-foot-sep">·</span>
-            <span class="kbd">ctrl + scroll</span> to zoom
+            <span class="kbd">scroll</span> to zoom
             <span class="fp-foot-sep">·</span>
             <span class="kbd">click</span> a node to refocus
             <span class="fp-foot-sep">·</span>
