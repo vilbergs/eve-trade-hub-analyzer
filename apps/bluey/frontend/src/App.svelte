@@ -2,6 +2,7 @@
     import Header from "./components/Header.svelte";
     import Legend from "./components/Legend.svelte";
     import Graph from "./components/Graph.svelte";
+    import BreakdownPanel from "./components/BreakdownPanel.svelte";
     import BomPanel from "./components/BomPanel.svelte";
     import { fetchChain, fetchMultiBom, mergeChains } from "./lib/api";
     import type {
@@ -38,6 +39,7 @@
     let excludedSet: Set<number> = $state(new Set());
     let hiddenKinds: Set<string> = $state(new Set());
     let loading = $state(false);
+    let viewMode: "graph" | "breakdown" = $state("graph");
     let generation = 0;
 
     // Derived: only changes when the set of type_ids in the ledger changes
@@ -250,25 +252,54 @@
     />
     <Legend {hiddenKinds} onToggleKind={toggleKind} />
     <main class="fp-main">
-        {#if loading}
-            <div class="fp-loading">Loading chain…</div>
-        {/if}
-        {#if mergedChain}
-            <Graph
-                chain={mergedChain}
-                {activeSet}
-                {excludedSet}
-                {hiddenKinds}
-                {setNodeState}
-                {bom}
-                {ledger}
-                onFocusChange={(_id, name) => {
-                    focusName = name;
-                }}
-            />
-        {:else if !loading}
-            <div class="fp-loading">Select a blueprint to begin</div>
-        {/if}
+        <div class="fp-view">
+            <div class="fp-tabs" role="tablist">
+                <button
+                    class="fp-tab"
+                    class:is-active={viewMode === "graph"}
+                    role="tab"
+                    aria-selected={viewMode === "graph"}
+                    onclick={() => (viewMode = "graph")}>Graph</button
+                >
+                <button
+                    class="fp-tab"
+                    class:is-active={viewMode === "breakdown"}
+                    role="tab"
+                    aria-selected={viewMode === "breakdown"}
+                    onclick={() => (viewMode = "breakdown")}>Breakdown</button
+                >
+            </div>
+            {#if loading}
+                <div class="fp-loading">Loading chain…</div>
+            {:else if mergedChain}
+                {#if viewMode === "graph"}
+                    <Graph
+                        chain={mergedChain}
+                        {activeSet}
+                        {excludedSet}
+                        {hiddenKinds}
+                        {setNodeState}
+                        {bom}
+                        {ledger}
+                        onFocusChange={(_id, name) => {
+                            focusName = name;
+                        }}
+                    />
+                {:else}
+                    <BreakdownPanel
+                        chain={mergedChain}
+                        {activeSet}
+                        {excludedSet}
+                        {hiddenKinds}
+                        {setNodeState}
+                        {bom}
+                        {ledger}
+                    />
+                {/if}
+            {:else}
+                <div class="fp-loading">Select a blueprint to begin</div>
+            {/if}
+        </div>
         <BomPanel
             {bom}
             ledgerCount={ledger.length}

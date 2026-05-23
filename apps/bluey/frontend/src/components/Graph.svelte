@@ -8,6 +8,7 @@
         type Edge,
     } from "@xyflow/svelte";
     import { setContext } from "svelte";
+    import { computePiTiers } from "../lib/pi-tier";
     import type {
         MergedChain,
         ChainNode,
@@ -120,49 +121,7 @@
         return false;
     }
 
-    // ── PI tier map (P0..P4) ────────────────────────────────────
-    // P0 = PI nodes with has_recipe=false; otherwise tier = max(PI input tier) + 1.
-    let piTierMap = $derived.by(() => {
-        const tier = new Map<number, number>();
-        const piNodes = chain.nodes.filter((n) => n.kind === "pi");
-        // Seed P0
-        for (const n of piNodes) if (!n.has_recipe) tier.set(n.type_id, 0);
-
-        // Iterate until stable
-        let changed = true;
-        let iterations = 0;
-        while (changed && iterations < 10) {
-            changed = false;
-            iterations++;
-            for (const n of piNodes) {
-                if (!n.has_recipe) continue;
-                let maxInputTier = -1;
-                for (const e of chain.edges) {
-                    if (e.to_type_id !== n.type_id) continue;
-                    const inputTier = tier.get(e.from_type_id);
-                    const inputNode = chain.nodes.find(
-                        (x) => x.type_id === e.from_type_id,
-                    );
-                    if (
-                        inputNode?.kind === "pi" &&
-                        inputTier !== undefined &&
-                        inputTier > maxInputTier
-                    ) {
-                        maxInputTier = inputTier;
-                    }
-                }
-                if (maxInputTier >= 0) {
-                    const newTier = maxInputTier + 1;
-                    const existing = tier.get(n.type_id);
-                    if (existing === undefined || newTier > existing) {
-                        tier.set(n.type_id, newTier);
-                        changed = true;
-                    }
-                }
-            }
-        }
-        return tier;
-    });
+    let piTierMap = $derived(computePiTiers(chain));
 
     // ── Expose context to ChainNodeCard ──────────────────────────
     const ctx: GraphContext = {
@@ -203,10 +162,7 @@
             for (const e of chain.edges) {
                 if (!needed.has(e.to_type_id)) continue;
                 // Only build/focal consumers pull in their inputs
-                if (
-                    !focalSet.has(e.to_type_id) &&
-                    !activeSet.has(e.to_type_id)
-                )
+                if (!focalSet.has(e.to_type_id) && !activeSet.has(e.to_type_id))
                     continue;
                 const inputId = e.from_type_id;
                 if (needed.has(inputId)) continue;
@@ -397,8 +353,8 @@
 
     // ── Build SvelteFlow nodes ──────────────────────────────────
     const COL_W = 260;
-    const COL_GAP = 120;
-    const ROW_GAP = 10;
+    const COL_GAP = 60;
+    const ROW_GAP = 0;
     const BASE_H = 78;
     const ROW_H = 16;
     const TOGGLE_H = 18;
@@ -441,14 +397,16 @@
     });
 
     let flowEdges = $derived.by(() => {
-        return visibleEdges.map((e): Edge => ({
-            id: `${e.from_type_id}-${e.to_type_id}`,
-            source: String(e.from_type_id),
-            target: String(e.to_type_id),
-            type: "default",
-            animated: false,
-            class: "fp-flow-edge is-hot",
-        }));
+        return visibleEdges.map(
+            (e): Edge => ({
+                id: `${e.from_type_id}-${e.to_type_id}`,
+                source: String(e.from_type_id),
+                target: String(e.to_type_id),
+                type: "default",
+                animated: false,
+                class: "fp-flow-edge is-hot",
+            }),
+        );
     });
 
     // SvelteFlow wants bindable nodes/edges — sync from derived to writable state

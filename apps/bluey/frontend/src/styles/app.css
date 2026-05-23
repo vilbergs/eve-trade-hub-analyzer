@@ -313,12 +313,180 @@ body {
     font-size: 14px;
 }
 
+/* ─── View tabs (Graph / Breakdown) ─────────────────────────────── */
+.fp-view {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.fp-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-0);
+    flex-shrink: 0;
+}
+.fp-tab {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 18px;
+    color: var(--text-faint);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition:
+        color 0.15s,
+        border-color 0.15s,
+        background 0.15s;
+}
+.fp-tab:hover {
+    color: var(--text-dim);
+    background: var(--surface-1);
+}
+.fp-tab.is-active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
 /* ─── Canvas ────────────────────────────────────────────────────── */
 .fp-canvas-wrap {
     flex: 1;
     min-width: 0;
     position: relative;
     overflow: hidden;
+}
+
+/* ─── Breakdown view ────────────────────────────────────────────── */
+.fp-breakdown {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px 32px;
+    background: var(--bg);
+}
+.fp-bd-section {
+    margin-bottom: 16px;
+}
+.fp-bd-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 0;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+}
+.fp-bd-label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+.fp-bd-count {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--text-faint);
+}
+.fp-bd-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+.fp-bd-row {
+    display: grid;
+    grid-template-columns: 1fr 90px 80px 80px auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: var(--radius);
+    border-left: 3px solid transparent;
+    transition:
+        background 0.15s,
+        opacity 0.15s;
+}
+.fp-bd-row:hover {
+    background: var(--surface-1);
+}
+.fp-bd-row.is-on {
+    background: var(--accent-soft);
+}
+.fp-bd-row.is-excluded {
+    opacity: 0.45;
+}
+.fp-bd-row.is-excluded .fp-bd-name {
+    text-decoration: line-through;
+}
+.fp-bd-row.n-raw-min {
+    border-left-color: var(--c-raw-min);
+}
+.fp-bd-row.n-raw-moon {
+    border-left-color: var(--c-raw-moon);
+}
+.fp-bd-row.n-react {
+    border-left-color: var(--c-react);
+}
+.fp-bd-row.n-t1 {
+    border-left-color: var(--c-t1);
+}
+.fp-bd-row.n-ram {
+    border-left-color: var(--c-ram);
+}
+.fp-bd-row.n-comp {
+    border-left-color: var(--c-comp);
+}
+.fp-bd-row.n-pi {
+    border-left-color: var(--c-raw-pl);
+}
+.fp-bd-row.n-t2 {
+    border-left-color: var(--c-t2);
+}
+.fp-bd-name {
+    font-size: 13px;
+    color: var(--text);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.fp-bd-qty {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent2);
+    text-align: right;
+}
+.fp-bd-price,
+.fp-bd-cost {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+}
+.fp-bd-cost {
+    font-weight: 600;
+    color: var(--text);
+}
+.fp-bd-state {
+    display: flex;
+    align-items: center;
+    background: var(--surface-0);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    width: fit-content;
+    justify-self: end;
+}
+.fp-bd-state-placeholder {
+    width: 84px;
+    justify-self: end;
 }
 
 /* ─── Svelte Flow theming ───────────────────────────────────────── */
