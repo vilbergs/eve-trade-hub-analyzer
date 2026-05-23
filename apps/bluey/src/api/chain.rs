@@ -1,6 +1,6 @@
 //! GET /chain/:type_id — full manufacturing dependency graph for a product.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
@@ -8,7 +8,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 use serde::Serialize;
 
-use eve_industry::{NodeKind, classify_batch, recipe_for};
+use eve_industry::{NodeKind, classify_batch, recipes_for_batch};
 
 use super::AppState;
 
@@ -51,51 +51,55 @@ async fn get_chain(
 
     // BFS to discover all nodes in the manufacturing tree.
     let mut visited: HashSet<i64> = HashSet::new();
-    let mut queue: VecDeque<i64> = VecDeque::new();
     let mut edges: Vec<ChainEdge> = Vec::new();
     let mut recipe_info: HashMap<i64, (i32, i64, i64)> = HashMap::new();
 
-    // Types that should never have their recipes expanded (treated as leaf nodes)
-    let raw_moon_ids: HashSet<i64> = sqlx::query_scalar::<_, i64>(
-        "SELECT t.type_id FROM sde_types t JOIN sde_groups g ON g.group_id = t.group_id WHERE g.category_id = 4 AND g.name = 'Moon Materials'"
-    )
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default()
-    .into_iter()
-    .collect();
+    // Use cached raw moon IDs from AppState.
+    let raw_moon_ids = &state.raw_moon_ids;
 
-    queue.push_back(type_id);
+    // Level-based BFS: process one frontier at a time with batch recipe fetches.
+    let mut frontier: Vec<i64> = vec![type_id];
     visited.insert(type_id);
 
-    while let Some(current) = queue.pop_front() {
-        // Skip recipe lookup for raw moon materials
-        if raw_moon_ids.contains(&current) {
-            continue;
-        }
-        match recipe_for(pool, current).await {
-            Ok(Some(recipe)) => {
+    while !frontier.is_empty() {
+        // Filter out raw moon materials — they are leaf nodes.
+        let to_fetch: Vec<i64> = frontier
+            .iter()
+            .filter(|id| !raw_moon_ids.contains(id))
+            .copied()
+            .collect();
+
+        // Batch-fetch all recipes for this frontier level.
+        let recipes = recipes_for_batch(pool, &to_fetch).await.map_err(|e| {
+            tracing::error!("recipes_for_batch failed: {e}");
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+        let mut next_frontier: Vec<i64> = Vec::new();
+
+        for current in &frontier {
+            if raw_moon_ids.contains(current) {
+                continue;
+            }
+            if let Some(recipe) = recipes.get(current) {
                 recipe_info.insert(
-                    current,
+                    *current,
                     (recipe.activity_id, recipe.output_quantity, recipe.time_secs),
                 );
                 for input in &recipe.inputs {
                     edges.push(ChainEdge {
                         from_type_id: input.type_id,
-                        to_type_id: current,
+                        to_type_id: *current,
                         quantity: input.quantity,
                     });
                     if visited.insert(input.type_id) {
-                        queue.push_back(input.type_id);
+                        next_frontier.push(input.type_id);
                     }
                 }
             }
-            Ok(None) => {}
-            Err(e) => {
-                tracing::error!("recipe_for({current}) failed: {e}");
-                return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
-            }
         }
+
+        frontier = next_frontier;
     }
 
     // Classify all discovered type_ids.

@@ -56,6 +56,12 @@ async fn list_products(
         .fetch_all(&state.pool)
         .await
     } else {
+        // Escape LIKE metacharacters in user input.
+        let escaped_search = search
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_");
+
         sqlx::query_as::<_, (i64, String, String, String)>(
             r#"
             SELECT DISTINCT bp.product_type_id,
@@ -72,7 +78,7 @@ async fn list_products(
             LIMIT $2
             "#,
         )
-        .bind(&search)
+        .bind(&escaped_search)
         .bind(limit)
         .fetch_all(&state.pool)
         .await

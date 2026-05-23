@@ -18,4 +18,7 @@ pub mod recipe;
 
 pub use classify::{NodeKind, classify, classify_batch};
 pub use loader::{IndustryReport, sync};
-pub use recipe::{BomLine, BomResult, Recipe, RecipeInput, bom_for, recipe_for};
+pub use recipe::{
+    BatchRecipeEntry, BomLine, BomResult, Recipe, RecipeInput, bom_for, recipe_for,
+    recipes_for_batch,
+};

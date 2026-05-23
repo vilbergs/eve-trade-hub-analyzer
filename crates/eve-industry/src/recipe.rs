@@ -173,6 +173,194 @@ pub async fn recipe_for(pool: &PgPool, product_type_id: i64) -> AppResult<Option
     Ok(None)
 }
 
+// ─── recipes_for_batch ───────────────────────────────────────────────────────
+
+/// A compact recipe result used by batch fetching.
+#[derive(Debug, Clone)]
+pub struct BatchRecipeEntry {
+    pub activity_id: i32,
+    pub output_quantity: i64,
+    pub time_secs: i64,
+    pub inputs: Vec<RecipeInput>,
+}
+
+/// Batch-fetch recipes for multiple product type_ids in a single query.
+///
+/// Returns a map from product_type_id → BatchRecipeEntry.
+/// Type IDs with no recipe are simply absent from the result.
+pub async fn recipes_for_batch(
+    pool: &PgPool,
+    product_type_ids: &[i64],
+) -> AppResult<HashMap<i64, BatchRecipeEntry>> {
+    if product_type_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let mut result: HashMap<i64, BatchRecipeEntry> = HashMap::new();
+
+    // 1. Batch-fetch blueprint products (manufacturing/reaction/invention).
+    let bp_rows = sqlx::query_as::<_, (i64, i64, i32, i64)>(
+        r#"
+        SELECT DISTINCT ON (bp.product_type_id)
+               bp.product_type_id,
+               bp.blueprint_type_id,
+               bp.activity_id::INT,
+               bp.quantity::BIGINT
+        FROM sde_blueprint_products bp
+        WHERE bp.product_type_id = ANY($1)
+          AND bp.activity_id IN (1, 9, 11)
+        ORDER BY bp.product_type_id, bp.activity_id
+        "#,
+    )
+    .bind(product_type_ids)
+    .fetch_all(pool)
+    .await?;
+
+    // Collect blueprint_type_ids for material fetch.
+    let bp_map: HashMap<i64, (i64, i32, i64)> = bp_rows
+        .into_iter()
+        .map(|(product_tid, bp_tid, act_id, qty)| (product_tid, (bp_tid, act_id, qty)))
+        .collect();
+
+    if !bp_map.is_empty() {
+        let bp_type_ids: Vec<i64> = bp_map.values().map(|(bp_tid, _, _)| *bp_tid).collect();
+
+        // Batch-fetch materials for all relevant blueprints.
+        let mat_rows = sqlx::query_as::<_, (i64, i32, i64, i64)>(
+            r#"
+            SELECT blueprint_type_id, activity_id::INT, material_type_id, quantity::BIGINT
+            FROM sde_blueprint_materials
+            WHERE blueprint_type_id = ANY($1)
+            "#,
+        )
+        .bind(&bp_type_ids)
+        .fetch_all(pool)
+        .await?;
+
+        // Group materials by (blueprint_type_id, activity_id).
+        let mut mat_map: HashMap<(i64, i32), Vec<RecipeInput>> = HashMap::new();
+        for (bp_tid, act_id, mat_tid, qty) in mat_rows {
+            mat_map
+                .entry((bp_tid, act_id))
+                .or_default()
+                .push(RecipeInput {
+                    type_id: mat_tid,
+                    quantity: qty,
+                });
+        }
+
+        // Batch-fetch times.
+        let time_rows = sqlx::query_as::<_, (i64, i32, i64)>(
+            r#"
+            SELECT blueprint_type_id, activity_id::INT, time_secs::BIGINT
+            FROM sde_blueprint_activities
+            WHERE blueprint_type_id = ANY($1)
+            "#,
+        )
+        .bind(&bp_type_ids)
+        .fetch_all(pool)
+        .await?;
+
+        let time_map: HashMap<(i64, i32), i64> = time_rows
+            .into_iter()
+            .map(|(bp_tid, act_id, t)| ((bp_tid, act_id), t))
+            .collect();
+
+        // Assemble entries.
+        for (product_tid, (bp_tid, act_id, output_quantity)) in &bp_map {
+            let inputs = mat_map.remove(&(*bp_tid, *act_id)).unwrap_or_default();
+            let time_secs = time_map.get(&(*bp_tid, *act_id)).copied().unwrap_or(0);
+            result.insert(
+                *product_tid,
+                BatchRecipeEntry {
+                    activity_id: *act_id,
+                    output_quantity: *output_quantity,
+                    time_secs,
+                    inputs,
+                },
+            );
+        }
+    }
+
+    // 2. Batch-fetch PI schematics for any IDs not already resolved.
+    let unresolved: Vec<i64> = product_type_ids
+        .iter()
+        .filter(|id| !result.contains_key(id))
+        .copied()
+        .collect();
+
+    if !unresolved.is_empty() {
+        let pi_rows = sqlx::query_as::<_, (i64, i64, i64)>(
+            r#"
+            SELECT DISTINCT ON (type_id)
+                   type_id, schematic_id::BIGINT, quantity::BIGINT
+            FROM sde_planet_schematic_types
+            WHERE type_id = ANY($1)
+              AND is_input = false
+            ORDER BY type_id
+            "#,
+        )
+        .bind(&unresolved)
+        .fetch_all(pool)
+        .await?;
+
+        if !pi_rows.is_empty() {
+            let schematic_ids: Vec<i64> = pi_rows.iter().map(|(_, sid, _)| *sid).collect();
+
+            // Fetch PI inputs.
+            let pi_input_rows = sqlx::query_as::<_, (i64, i64, i64)>(
+                r#"
+                SELECT schematic_id::BIGINT, type_id, quantity::BIGINT
+                FROM sde_planet_schematic_types
+                WHERE schematic_id = ANY($1)
+                  AND is_input = true
+                "#,
+            )
+            .bind(&schematic_ids)
+            .fetch_all(pool)
+            .await?;
+
+            let mut pi_input_map: HashMap<i64, Vec<RecipeInput>> = HashMap::new();
+            for (sid, tid, qty) in pi_input_rows {
+                pi_input_map.entry(sid).or_default().push(RecipeInput {
+                    type_id: tid,
+                    quantity: qty,
+                });
+            }
+
+            // Fetch cycle times.
+            let pi_time_rows = sqlx::query_as::<_, (i64, i64)>(
+                r#"
+                SELECT schematic_id::BIGINT, cycle_time_secs::BIGINT
+                FROM sde_planet_schematics
+                WHERE schematic_id = ANY($1)
+                "#,
+            )
+            .bind(&schematic_ids)
+            .fetch_all(pool)
+            .await?;
+
+            let pi_time_map: HashMap<i64, i64> = pi_time_rows.into_iter().collect();
+
+            for (product_tid, schematic_id, output_quantity) in pi_rows {
+                let inputs = pi_input_map.remove(&schematic_id).unwrap_or_default();
+                let time_secs = pi_time_map.get(&schematic_id).copied().unwrap_or(0);
+                result.insert(
+                    product_tid,
+                    BatchRecipeEntry {
+                        activity_id: -1,
+                        output_quantity,
+                        time_secs,
+                        inputs,
+                    },
+                );
+            }
+        }
+    }
+
+    Ok(result)
+}
+
 // ─── bom_for ─────────────────────────────────────────────────────────────────
 
 /// Work-queue item for iterative BOM expansion.

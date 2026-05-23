@@ -48,16 +48,39 @@ pub fn router(state: Arc<AppState>) -> Router {
 async fn compute_bom(
     State(state): State<Arc<AppState>>,
     Json(req): Json<BomRequest>,
-) -> Result<Json<BomResponse>, axum::http::StatusCode> {
+) -> Result<Json<BomResponse>, (axum::http::StatusCode, String)> {
+    // Validate inputs.
+    if req.runs < 1 {
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            "runs must be >= 1".to_string(),
+        ));
+    }
+    if !(0.0..=10.0).contains(&req.me_percent) {
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            "me_percent must be in range [0.0, 10.0]".to_string(),
+        ));
+    }
+
     let pool = &state.pool;
     let built_set: HashSet<i64> = req.built_type_ids.into_iter().collect();
 
-    let bom = bom_for(pool, req.product_type_id, req.runs, req.me_percent, &built_set)
-        .await
-        .map_err(|e| {
-            tracing::error!("bom_for failed: {e}");
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let bom = bom_for(
+        pool,
+        req.product_type_id,
+        req.runs,
+        req.me_percent,
+        &built_set,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("bom_for failed: {e}");
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            format!("bom_for failed: {e}"),
+        )
+    })?;
 
     // Default: Jita sell min.
     let basis = req.price_basis.unwrap_or(PriceBasis::SellMin {

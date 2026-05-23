@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -25,9 +26,22 @@ async fn main() -> eve_core::AppResult<()> {
         .connect(&config.database_url)
         .await?;
 
+    // Cache raw moon material type IDs at startup.
+    let raw_moon_ids: HashSet<i64> = sqlx::query_scalar::<_, i64>(
+        "SELECT t.type_id FROM sde_types t JOIN sde_groups g ON g.group_id = t.group_id WHERE g.category_id = 4 AND g.name = 'Moon Materials'"
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap_or_default()
+    .into_iter()
+    .collect();
+
+    tracing::info!("Cached {} raw moon material IDs", raw_moon_ids.len());
+
     let state = Arc::new(api::AppState {
         pool,
         http: reqwest::Client::new(),
+        raw_moon_ids,
     });
 
     let api_routes = api::router(state.clone());
