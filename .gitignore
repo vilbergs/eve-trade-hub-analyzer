@@ -3,3 +3,5 @@
 /watchlist.txt
 /.claude
 .DS_Store
+node_modules/
+apps/bluey/frontend/dist/

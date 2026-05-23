@@ -10,6 +10,7 @@ members = [
   "crates/eve-market",
   "crates/eve-pricing",
   "apps/trade-hub",
+  "apps/bluey",
 ]
 
 [workspace.package]
@@ -20,7 +21,7 @@ rust-version = "1.85"
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip"] }
-axum = { version = "0.7", default-features = false, features = ["tokio", "http1", "query"] }
+axum = { version = "0.7", default-features = false, features = ["tokio", "http1", "query", "json"] }
 sqlx = { version = "0.8", default-features = false, features = [
   "runtime-tokio-rustls",
   "postgres",

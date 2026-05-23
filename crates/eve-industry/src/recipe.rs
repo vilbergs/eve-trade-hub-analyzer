@@ -62,7 +62,7 @@ pub async fn recipe_for(pool: &PgPool, product_type_id: i64) -> AppResult<Option
         SELECT bp.blueprint_type_id, bp.activity_id::INT, bp.quantity::BIGINT
         FROM sde_blueprint_products bp
         WHERE bp.product_type_id = $1
-          AND bp.activity_id IN (1, 9)
+          AND bp.activity_id IN (1, 9, 11)
         LIMIT 1
         "#,
     )

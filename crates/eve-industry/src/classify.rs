@@ -85,12 +85,12 @@ pub async fn classify(pool: &PgPool, type_id: i64) -> AppResult<NodeKind> {
         return Ok(NodeKind::Pi);
     }
 
-    // Rule 3: Reaction — produced by activity_id = 9
+    // Rule 3: Reaction — produced by activity_id = 9 or 11
     let is_reaction: bool = sqlx::query_scalar::<_, bool>(
         r#"
         SELECT EXISTS(
             SELECT 1 FROM sde_blueprint_products
-            WHERE product_type_id = $1 AND activity_id = 9
+            WHERE product_type_id = $1 AND activity_id IN (9, 11)
         )
         "#,
     )
@@ -245,13 +245,13 @@ pub async fn classify_batch(pool: &PgPool, type_ids: &[i64]) -> AppResult<HashMa
         need_reaction_check.push(tid);
     }
 
-    // 2. Bulk check reaction products (activity_id = 9).
+    // 2. Bulk check reaction products (activity_id = 9 or 11).
     if !need_reaction_check.is_empty() {
         let reaction_type_ids: Vec<i64> = sqlx::query_scalar::<_, i64>(
             r#"
             SELECT DISTINCT product_type_id
             FROM sde_blueprint_products
-            WHERE product_type_id = ANY($1) AND activity_id = 9
+            WHERE product_type_id = ANY($1) AND activity_id IN (9, 11)
             "#,
         )
         .bind(&need_reaction_check)

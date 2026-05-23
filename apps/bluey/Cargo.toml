@@ -1,0 +1,25 @@
+[package]
+name = "bluey"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "bluey"
+path = "src/main.rs"
+
+[dependencies]
+eve-core = { path = "../../crates/eve-core" }
+eve-industry = { path = "../../crates/eve-industry" }
+eve-pricing = { path = "../../crates/eve-pricing" }
+
+tokio.workspace = true
+reqwest.workspace = true
+axum.workspace = true
+sqlx.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+dotenvy.workspace = true
+tower-http = { version = "0.6", features = ["fs", "cors"] }

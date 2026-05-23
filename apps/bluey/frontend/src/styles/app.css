@@ -1,0 +1,1178 @@
+/* ──────────────────────────────────────────────────────────────────
+   BLUEY — Industrial planner, dark technical/blueprint aesthetic
+   ────────────────────────────────────────────────────────────────── */
+
+:root {
+    --gutter: 28px;
+    --col-w: 240px;
+    --col-gap: 90px;
+    --node-gap: 10px;
+    --radius: 4px;
+    --radius-lg: 6px;
+
+    --f-sans: "Inter", system-ui, -apple-system, sans-serif;
+    --f-mono:
+        "JetBrains Mono", "Berkeley Mono", ui-monospace, "SF Mono", Menlo,
+        monospace;
+
+    --bg: oklch(0.16 0.012 250);
+    --bg-grid: oklch(0.2 0.012 250);
+    --surface-0: oklch(0.21 0.012 250);
+    --surface-1: oklch(0.24 0.013 250);
+    --surface-2: oklch(0.28 0.014 250);
+    --line: oklch(0.33 0.014 250);
+    --line-strong: oklch(0.45 0.02 250);
+    --text: oklch(0.94 0.005 250);
+    --text-dim: oklch(0.72 0.01 250);
+    --text-faint: oklch(0.55 0.01 250);
+
+    --accent-h: 192 90% 62%;
+    --accent2-h: 35 92% 62%;
+    --accent: hsl(var(--accent-h));
+    --accent-soft: hsl(var(--accent-h) / 0.15);
+    --accent-line: hsl(var(--accent-h) / 0.55);
+    --accent2: hsl(var(--accent2-h));
+    --accent2-soft: hsl(var(--accent2-h) / 0.14);
+
+    --c-raw-min: oklch(0.7 0.11 220);
+    --c-raw-moon: oklch(0.74 0.13 290);
+    --c-raw-pl: oklch(0.78 0.13 140);
+    --c-react: oklch(0.75 0.13 30);
+    --c-t1: oklch(0.75 0.05 250);
+    --c-ram: oklch(0.78 0.13 80);
+    --c-comp: oklch(0.78 0.12 60);
+    --c-t2: oklch(0.82 0.18 200);
+    --c-down: oklch(0.72 0.1 320);
+
+    --ok: oklch(0.75 0.14 145);
+    --warn: oklch(0.78 0.14 70);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--f-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* ─── App shell ─────────────────────────────────────────────────── */
+.fp-app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ─── Header ────────────────────────────────────────────────────── */
+.fp-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px var(--gutter);
+    background: var(--surface-0);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+    z-index: 100;
+}
+
+.fp-header-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--line);
+    flex-shrink: 0;
+}
+
+.fp-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.fp-brand-mark {
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+}
+.fp-brand-name {
+    font-family: var(--f-mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text);
+}
+.fp-brand-sub {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.fp-product-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 240px;
+}
+.fp-picker-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* ─── Autocomplete ──────────────────────────────────────────────── */
+.fp-autoc {
+    position: relative;
+}
+.fp-autoc-input {
+    width: 100%;
+    padding: 6px 28px 6px 10px;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--f-sans);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.fp-autoc-input:focus {
+    border-color: var(--accent-line);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.fp-autoc-input::placeholder {
+    color: var(--text-faint);
+}
+.fp-autoc-caret {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-faint);
+    font-size: 10px;
+    pointer-events: none;
+}
+.fp-autoc-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    z-index: 200;
+    list-style: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.fp-autoc-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.fp-autoc-opt-name {
+    flex: 1;
+}
+.fp-autoc-opt-group {
+    font-size: 11px;
+    color: var(--text-faint);
+}
+.fp-autoc-opt.is-hi {
+    background: var(--accent-soft);
+}
+.fp-autoc-opt.is-sel .fp-autoc-opt-name {
+    color: var(--accent);
+}
+
+/* ─── Controls ──────────────────────────────────────────────────── */
+.fp-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.fp-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.fp-ctrl-k {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+}
+.fp-ctrl input {
+    width: 56px;
+    padding: 5px 8px;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--f-mono);
+    font-size: 13px;
+    text-align: center;
+    outline: none;
+}
+.fp-ctrl input:focus {
+    border-color: var(--accent-line);
+}
+.fp-ctrl-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.fp-ctrl-stepper button {
+    padding: 4px 8px;
+    background: var(--surface-1);
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+}
+.fp-ctrl-stepper button:hover {
+    background: var(--surface-2);
+}
+.fp-ctrl-stepper-v {
+    padding: 4px 8px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--text);
+    min-width: 36px;
+    text-align: center;
+    background: var(--surface-0);
+}
+
+/* ─── Legend ─────────────────────────────────────────────────────── */
+.fp-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px var(--gutter);
+    background: var(--surface-0);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+.fp-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font: inherit;
+    color: inherit;
+    transition:
+        opacity 0.15s,
+        background 0.15s;
+}
+.fp-legend-item:hover {
+    background: var(--surface-1, rgba(255, 255, 255, 0.06));
+}
+.fp-legend-item.is-hidden {
+    opacity: 0.35;
+    text-decoration: line-through;
+}
+.fp-legend-item.is-hidden .fp-legend-swatch {
+    opacity: 0.3;
+}
+.fp-legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+.fp-legend-swatch.mat-comp {
+    background: var(--c-comp);
+}
+.fp-legend-swatch.mat-react {
+    background: var(--c-react);
+}
+.fp-legend-swatch.mat-pi {
+    background: var(--c-raw-pl);
+}
+.fp-legend-swatch.mat-t1 {
+    background: var(--c-t1);
+}
+.fp-legend-swatch.mat-ram {
+    background: var(--c-ram);
+}
+.fp-legend-swatch.mat-moon {
+    background: var(--c-raw-moon);
+}
+.fp-legend-swatch.mat-min {
+    background: var(--c-raw-min);
+}
+.fp-legend-sep {
+    width: 1px;
+    height: 14px;
+    background: var(--line);
+    margin: 0 4px;
+}
+.fp-legend-hint {
+    color: var(--text-faint);
+    font-size: 11px;
+}
+.kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    background: var(--surface-1);
+    color: var(--text-dim);
+}
+
+/* ─── Main layout ───────────────────────────────────────────────── */
+.fp-main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.fp-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: var(--text-faint);
+    font-family: var(--f-mono);
+    font-size: 14px;
+}
+
+/* ─── Canvas ────────────────────────────────────────────────────── */
+.fp-canvas-wrap {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    overflow: hidden;
+}
+.fp-canvas-viewport {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.fp-canvas-viewport:active {
+    cursor: grabbing;
+}
+.fp-canvas-scaled {
+    will-change: transform;
+    position: relative;
+}
+
+/* ─── Columns ───────────────────────────────────────────────────── */
+.fp-cols {
+    display: flex;
+    gap: var(--col-gap);
+    padding: 60px 60px 80px;
+    align-items: flex-start;
+}
+.fp-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--node-gap);
+    min-width: var(--col-w);
+}
+.fp-col-head {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+}
+.fp-col-title {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.fp-col-sub {
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 2px;
+}
+.fp-col-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--node-gap);
+}
+
+/* ─── Node cards ────────────────────────────────────────────────── */
+.fp-node {
+    position: relative;
+    padding: 10px 14px;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s,
+        opacity 0.15s;
+    min-width: var(--col-w);
+}
+.fp-node:hover {
+    border-color: var(--line-strong);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.fp-node.is-off {
+    opacity: 0.65;
+}
+.fp-node.is-on {
+    border-color: var(--accent-line);
+    box-shadow: 0 0 0 1px var(--accent-soft);
+}
+.fp-node.is-focus {
+    border-color: var(--accent);
+    box-shadow:
+        0 0 0 2px var(--accent-soft),
+        0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.fp-node-kind-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.fp-node-kind {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+.fp-node-qty {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent2);
+}
+.fp-node-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* ─── Inline recipe/materials list ──────────────────────────────── */
+.fp-recipe {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+}
+.fp-recipe-label {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.fp-recipe-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.fp-recipe-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+.fp-recipe-row::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    background: var(--text-faint);
+}
+.fp-recipe-row.mat-min::before {
+    background: var(--c-raw-min);
+}
+.fp-recipe-row.mat-moon::before {
+    background: var(--c-raw-moon);
+}
+.fp-recipe-row.mat-pi::before {
+    background: var(--c-raw-pl);
+}
+.fp-recipe-row.mat-react::before {
+    background: var(--c-react);
+}
+.fp-recipe-row.mat-comp::before {
+    background: var(--c-comp);
+}
+.fp-recipe-row.mat-t1::before {
+    background: var(--c-t1);
+}
+.fp-recipe-row.mat-ram::before {
+    background: var(--c-ram);
+}
+.fp-recipe-name {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.fp-recipe-qty {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+}
+
+/* Kind-based accent colors */
+.fp-node.n-raw-min {
+    border-left: 3px solid var(--c-raw-min);
+}
+.fp-node.n-raw-moon {
+    border-left: 3px solid var(--c-raw-moon);
+}
+.fp-node.n-raw-pl {
+    border-left: 3px solid var(--c-raw-pl);
+}
+.fp-node.n-react {
+    border-left: 3px solid var(--c-react);
+}
+.fp-node.n-t1 {
+    border-left: 3px solid var(--c-t1);
+}
+.fp-node.n-ram {
+    border-left: 3px solid var(--c-ram);
+}
+.fp-node.n-comp {
+    border-left: 3px solid var(--c-comp);
+}
+.fp-node.n-pi {
+    border-left: 3px solid var(--c-raw-pl);
+}
+
+.fp-node.n-t2 {
+    border-color: var(--c-t2);
+    background: linear-gradient(135deg, var(--surface-1), oklch(0.22 0.03 200));
+    border-left: 3px solid var(--c-t2);
+}
+.fp-node.n-t2 .fp-node-name {
+    color: var(--c-t2);
+    font-size: 15px;
+}
+.fp-node.n-t2 .fp-node-kind {
+    color: var(--c-t2);
+}
+.fp-node.n-t2.is-focus {
+    box-shadow:
+        0 0 0 2px hsl(192 90% 62% / 0.3),
+        0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Node excluded state ─────────────────────────────────────── */
+.fp-node.is-excluded {
+    opacity: 0.4;
+    border-style: dashed;
+}
+.fp-node.is-excluded .fp-node-name {
+    text-decoration: line-through;
+    color: var(--text-faint);
+}
+
+/* ─── Collapsible recipe inputs ───────────────────────────────── */
+.fp-recipe-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    padding: 2px 0;
+    cursor: pointer;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+}
+.fp-recipe-toggle:hover {
+    color: var(--text-dim);
+}
+.fp-recipe-chevron {
+    display: inline-block;
+    transition: transform 0.15s;
+    font-size: 10px;
+}
+.fp-recipe-chevron.is-open {
+    transform: rotate(90deg);
+}
+.fp-recipe-count {
+    font-size: 9px;
+    color: var(--text-faint);
+    opacity: 0.7;
+}
+
+/* ─── 3-state toggle button (BUILD / BUY / OFF) ───────────────── */
+.fp-node-state {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-top: 6px;
+    background: var(--surface-0);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    width: fit-content;
+}
+.fp-state-label {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 3px 6px;
+    color: var(--text-faint);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+.fp-state-label:hover {
+    color: var(--text-dim);
+    background: var(--surface-2);
+}
+.fp-state-label.is-current.fp-state-label--build {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+.fp-state-label.is-current.fp-state-label--buy {
+    background: hsl(var(--accent2-h) / 0.15);
+    color: var(--accent2);
+}
+.fp-state-label.is-current.fp-state-label--off {
+    background: oklch(0.5 0.05 0 / 0.15);
+    color: oklch(0.6 0.05 0);
+}
+
+/* ─── BOM panel ─────────────────────────────────────────────────── */
+.fp-bom {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-0);
+    border-left: 1px solid var(--line);
+    overflow-y: auto;
+}
+.fp-bom-head {
+    padding: 16px 16px 12px;
+}
+.fp-bom-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 4px 0 2px;
+}
+.fp-bom-sub {
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.4;
+}
+.fp-bom-eyebrow {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+}
+.fp-bom-stats {
+    display: flex;
+    gap: 16px;
+    padding: 8px 16px 12px;
+    border-bottom: 1px solid var(--line);
+}
+.fp-stat {
+    flex: 1;
+}
+.fp-stat-k {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+.fp-stat-v {
+    font-family: var(--f-mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+}
+.fp-stat-v span {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 500;
+}
+.fp-stat-isk {
+    color: var(--accent2);
+}
+
+.fp-bom-empty {
+    padding: 32px 16px;
+    text-align: center;
+}
+.fp-bom-empty-glyph {
+    font-size: 32px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+}
+.fp-bom-empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+}
+.fp-bom-empty-sub {
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.5;
+}
+
+.fp-bom-list {
+    flex: 1;
+    overflow-y: auto;
+}
+.fp-bom-group {
+    margin-bottom: 4px;
+}
+.fp-bom-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px 4px;
+    position: sticky;
+    top: 0;
+    background: var(--surface-0);
+    z-index: 1;
+}
+.fp-bom-group-name {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.fp-bom-group-count {
+    font-size: 10px;
+    color: var(--text-faint);
+}
+.fp-bom-group ul {
+    list-style: none;
+}
+.fp-bom-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 16px;
+    font-size: 12px;
+}
+.fp-bom-row-name {
+    flex: 1;
+    min-width: 0;
+}
+.fp-bom-row-full {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    color: var(--text);
+}
+.fp-bom-row-qty {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 50px;
+    text-align: right;
+}
+.fp-bom-row-cost {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--accent2);
+    min-width: 60px;
+    text-align: right;
+}
+.fp-bom-foot {
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+}
+
+/* ─── Buttons ───────────────────────────────────────────────────── */
+.fp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    font-family: var(--f-sans);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--surface-1);
+    color: var(--text);
+    transition:
+        background 0.1s,
+        border-color 0.1s;
+}
+.fp-btn-ghost:hover {
+    background: var(--surface-2);
+    border-color: var(--line-strong);
+}
+
+/* ─── Footer ────────────────────────────────────────────────────── */
+.fp-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px var(--gutter);
+    background: var(--surface-0);
+    border-top: 1px solid var(--line);
+    flex-shrink: 0;
+}
+.fp-foot-info {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.fp-foot-canvas-hint {
+    font-size: 11px;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.fp-foot-sep {
+    color: var(--line-strong);
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--line-strong);
+}
+
+/* ─── SVG Edge Lines ────────────────────────────────────────────── */
+.fp-edges {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    overflow: visible;
+}
+.fp-edge {
+    fill: none;
+    stroke: color-mix(in oklab, var(--line-strong) 95%, transparent);
+    stroke-width: 1.25;
+    color: var(--line-strong);
+    opacity: 0.85;
+    transition:
+        stroke 0.2s,
+        opacity 0.2s,
+        stroke-width 0.2s;
+}
+.fp-edge.is-dim {
+    opacity: 0.22;
+}
+.fp-edge.is-hot {
+    stroke: var(--accent);
+    color: var(--accent);
+    stroke-width: 2.25;
+    opacity: 1;
+    filter: drop-shadow(0 0 8px hsl(var(--accent-h) / 0.8));
+}
+
+/* ─── Node focus highlight ──────────────────────────────────────── */
+.fp-node.is-node-focused {
+    outline: 1.5px solid var(--accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 12px hsl(var(--accent-h) / 0.25);
+}
+
+/* ─── Canvas Controls ───────────────────────────────────────────── */
+.fp-canvas-controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 20;
+}
+.fp-canvas-ctrl {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: color-mix(in oklab, var(--surface-0) 92%, transparent);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--f-mono);
+    font-size: 16px;
+    backdrop-filter: blur(6px);
+    transition:
+        background 0.15s,
+        border-color 0.15s,
+        color 0.15s;
+}
+.fp-canvas-ctrl:hover {
+    background: var(--surface-2);
+    border-color: var(--line-strong);
+    color: var(--text);
+}
+
+/* ── Current Focus card (header right) ────────────────────── */
+.fp-focus-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: 180px;
+}
+.fp-focus-eyebrow {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text-faint);
+}
+.fp-focus-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    font-family: var(--f-sans);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+.fp-focus-name--dim {
+    color: var(--text-faint);
+}
+.fp-focus-sub {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--text-faint);
+}
+
+/* ── Blueprint tags ────────────────────────────────────────── */
+.fp-picker-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.fp-tag {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    color: var(--text-dim);
+    background: var(--surface-0);
+    white-space: nowrap;
+}
+
+/* ── Ledger (Build Plan) ────────────────────────────────── */
+.fp-ledger {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.fp-ledger-eyebrow {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.fp-ledger-count {
+    font-size: 10px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0;
+}
+.fp-ledger-empty {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+}
+.fp-ledger-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+.fp-ledger-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 4px 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.fp-ledger-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.fp-ledger-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.fp-ledger-field {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: var(--text-dim);
+}
+.fp-ledger-field-k {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+}
+.fp-ledger-field input {
+    width: 40px;
+    background: var(--surface-0);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: var(--f-mono);
+    font-size: 11px;
+    padding: 2px 4px;
+    text-align: center;
+}
+.fp-ledger-field input:focus {
+    outline: none;
+    border-color: var(--accent-line);
+}
+.fp-ledger-me-btn {
+    background: var(--surface-0);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    color: var(--text-dim);
+    font-size: 11px;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    padding: 0;
+    font-family: var(--f-mono);
+}
+.fp-ledger-me-btn:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+.fp-ledger-me-val {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text);
+    min-width: 24px;
+    text-align: center;
+}
+.fp-ledger-remove {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    border-radius: 2px;
+}
+.fp-ledger-remove:hover {
+    color: oklch(0.7 0.15 25);
+    background: oklch(0.7 0.15 25 / 0.1);
+}
+
+/* ── Autocomplete "added" flag ──────────────────────────── */
+.fp-autoc-opt-flag {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-left: auto;
+    padding-left: 8px;
+}
