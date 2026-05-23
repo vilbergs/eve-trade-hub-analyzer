@@ -2,11 +2,12 @@ use clap::Parser;
 use eve_core::telemetry;
 use eve_trade_hub_analyzer::{Config, db};
 
-/// Download the latest Fuzzwork SDE CSVs and load type/group/market-group tables.
+/// Download the latest Fuzzwork SDE CSVs and load type/group/market-group
+/// tables + industry blueprint/PI data.
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
-    /// Force a reload even if eve_sde_meta.version matches the upstream.
+    /// Force a reload even if the stored version matches upstream.
     #[arg(long, default_value_t = false)]
     force: bool,
 }
@@ -23,12 +24,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
 
     if args.force {
-        // Clear the version row so sync proceeds even on an unchanged upstream.
         sqlx::query("DELETE FROM eve_sde_meta WHERE id = 1")
             .execute(&pool)
             .await?;
+        sqlx::query("DELETE FROM eve_industry_meta WHERE id = 1")
+            .execute(&pool)
+            .await
+            .ok(); // table may not exist yet on first run
     }
 
+    // ── Base SDE (types, groups, categories, market groups) ──────────────
     match eve_sde::sync(&pool, &http).await? {
         eve_sde::SdeReport::UpToDate { version } => {
             tracing::info!(%version, "SDE up to date");
@@ -47,6 +52,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 market_groups,
                 types,
                 "SDE loaded"
+            );
+        }
+    }
+
+    // ── Industry data (blueprints, materials, products, PI) ─────────────
+    match eve_industry::sync(&pool, &http).await? {
+        eve_industry::IndustryReport::UpToDate { version } => {
+            tracing::info!(%version, "industry data up to date");
+        }
+        eve_industry::IndustryReport::Loaded {
+            version,
+            blueprints,
+            activities,
+            materials,
+            products,
+            pi_schematics,
+            pi_types,
+        } => {
+            tracing::info!(
+                %version,
+                blueprints,
+                activities,
+                materials,
+                products,
+                pi_schematics,
+                pi_types,
+                "industry data loaded"
             );
         }
     }

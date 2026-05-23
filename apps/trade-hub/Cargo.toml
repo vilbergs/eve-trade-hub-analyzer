@@ -36,6 +36,7 @@ eve-core = { path = "../../crates/eve-core" }
 eve-esi = { path = "../../crates/eve-esi" }
 eve-auth = { path = "../../crates/eve-auth" }
 eve-sde = { path = "../../crates/eve-sde" }
+eve-industry = { path = "../../crates/eve-industry" }
 eve-sheets = { path = "../../crates/eve-sheets" }
 eve-market = { path = "../../crates/eve-market" }
 

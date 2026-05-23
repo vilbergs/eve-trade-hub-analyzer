@@ -1,13 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/eve-core",
-    "crates/eve-esi",
-    "crates/eve-auth",
-    "crates/eve-sde",
-    "crates/eve-sheets",
-    "crates/eve-market",
-    "apps/trade-hub",
+  "crates/eve-core",
+  "crates/eve-esi",
+  "crates/eve-auth",
+  "crates/eve-sde",
+  "crates/eve-industry",
+  "crates/eve-sheets",
+  "crates/eve-market",
+  "apps/trade-hub",
 ]
 
 [workspace.package]
@@ -19,7 +20,14 @@ rust-version = "1.85"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip"] }
 axum = { version = "0.7", default-features = false, features = ["tokio", "http1", "query"] }
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "macros", "migrate", "chrono", "uuid"] }
+sqlx = { version = "0.8", default-features = false, features = [
+  "runtime-tokio-rustls",
+  "postgres",
+  "macros",
+  "migrate",
+  "chrono",
+  "uuid",
+] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 jsonwebtoken = "9"

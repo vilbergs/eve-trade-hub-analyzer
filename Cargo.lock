@@ -610,6 +610,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "eve-industry"
+version = "0.1.0"
+dependencies = [
+ "eve-core",
+ "reqwest",
+ "serde",
+ "sha2",
+ "sqlx",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "eve-market"
 version = "0.1.0"
 dependencies = [
@@ -658,6 +671,7 @@ dependencies = [
  "eve-auth",
  "eve-core",
  "eve-esi",
+ "eve-industry",
  "eve-market",
  "eve-sde",
  "eve-sheets",
