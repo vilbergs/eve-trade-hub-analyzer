@@ -1,0 +1,15 @@
+[package]
+name = "eve-pricing"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+eve-core = { path = "../eve-core" }
+
+sqlx.workspace = true
+serde.workspace = true
+chrono.workspace = true

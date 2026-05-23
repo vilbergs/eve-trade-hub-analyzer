@@ -8,6 +8,7 @@ members = [
   "crates/eve-industry",
   "crates/eve-sheets",
   "crates/eve-market",
+  "crates/eve-pricing",
   "apps/trade-hub",
 ]
 
