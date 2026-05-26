@@ -303,52 +303,30 @@
         return map;
     });
 
-    // Edges: only shown when a node is focused — show the full chain
-    // (upstream inputs + downstream consumers) reachable through it.
+    // Edges: only shown when a node is focused — light up the upstream
+    // production tree (everything needed to build the focused node), all
+    // the way down to raws. Downstream consumers are intentionally not
+    // highlighted; clicking a widely-used material would otherwise flood
+    // the graph.
     let visibleEdges = $derived.by(() => {
         if (focusId === null) return [];
 
-        const reachable = new Set<number>([focusId]);
-
-        // Walk upstream: inputs of inputs of ...
-        const upQueue = [focusId];
-        while (upQueue.length > 0) {
-            const id = upQueue.pop()!;
+        const out: typeof chain.edges = [];
+        const seen = new Set<number>([focusId]);
+        const queue = [focusId];
+        while (queue.length > 0) {
+            const id = queue.pop()!;
             for (const e of chain.edges) {
-                if (
-                    e.to_type_id === id &&
-                    visibleTypeIds.has(e.from_type_id) &&
-                    !reachable.has(e.from_type_id)
-                ) {
-                    reachable.add(e.from_type_id);
-                    upQueue.push(e.from_type_id);
+                if (e.to_type_id !== id) continue;
+                if (!visibleTypeIds.has(e.from_type_id)) continue;
+                out.push(e);
+                if (!seen.has(e.from_type_id)) {
+                    seen.add(e.from_type_id);
+                    queue.push(e.from_type_id);
                 }
             }
         }
-
-        // Walk downstream: consumers of consumers of ...
-        const downQueue = [focusId];
-        while (downQueue.length > 0) {
-            const id = downQueue.pop()!;
-            for (const e of chain.edges) {
-                if (
-                    e.from_type_id === id &&
-                    visibleTypeIds.has(e.to_type_id) &&
-                    !reachable.has(e.to_type_id)
-                ) {
-                    reachable.add(e.to_type_id);
-                    downQueue.push(e.to_type_id);
-                }
-            }
-        }
-
-        return chain.edges.filter(
-            (e) =>
-                reachable.has(e.from_type_id) &&
-                reachable.has(e.to_type_id) &&
-                visibleTypeIds.has(e.from_type_id) &&
-                visibleTypeIds.has(e.to_type_id),
-        );
+        return out;
     });
 
     // ── Build SvelteFlow nodes ──────────────────────────────────
