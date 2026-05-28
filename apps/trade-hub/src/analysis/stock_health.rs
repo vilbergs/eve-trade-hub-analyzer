@@ -16,6 +16,8 @@ use eve_core::AppResult;
 pub struct StockHealthRow {
     pub type_id: i64,
     pub type_name: String,
+    pub group_name: Option<String>,
+    pub category_name: Option<String>,
     pub station_id: i64,
     pub station_name: Option<String>,
     pub is_stocked: bool,
@@ -36,6 +38,8 @@ impl Renderable for StockHealthRow {
         vec![
             "type_id",
             "type_name",
+            "group",
+            "category",
             "station_id",
             "station_name",
             "stocked",
@@ -56,6 +60,8 @@ impl Renderable for StockHealthRow {
         vec![
             self.type_id.to_string(),
             self.type_name.clone(),
+            self.group_name.clone().unwrap_or_default(),
+            self.category_name.clone().unwrap_or_default(),
             self.station_id.to_string(),
             self.station_name.clone().unwrap_or_default(),
             if self.is_stocked { "yes" } else { "no" }.into(),
@@ -166,6 +172,8 @@ consumption AS (
 SELECT
     tt.type_id,
     COALESCE(st.name, '?')                                                AS type_name,
+    sg.name                                                               AS group_name,
+    sc.name                                                               AS category_name,
     ts.station_id,
     ts.name                                                               AS station_name,
     (sl.lowest_sell IS NOT NULL)                                          AS is_stocked,
@@ -190,6 +198,8 @@ SELECT
 FROM tracked_types tt
 CROSS JOIN tracked_stations ts
 LEFT JOIN sde_types       st ON st.type_id = tt.type_id
+LEFT JOIN sde_groups      sg ON sg.group_id = st.group_id
+LEFT JOIN sde_categories  sc ON sc.category_id = sg.category_id
 LEFT JOIN sell_lowest     sl ON sl.type_id = tt.type_id AND sl.location_id = ts.station_id
 LEFT JOIN buy_highest     bh ON bh.type_id = tt.type_id AND bh.location_id = ts.station_id
 LEFT JOIN sell_p5         sp ON sp.type_id = tt.type_id AND sp.location_id = ts.station_id

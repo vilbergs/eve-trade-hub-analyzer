@@ -1,0 +1,45 @@
+[package]
+name = "intel"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "intel"
+path = "src/main.rs"
+
+[dependencies]
+eve-core = { path = "../../crates/eve-core" }
+
+tokio.workspace = true
+reqwest.workspace = true
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+chrono.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+dotenvy.workspace = true
+thiserror.workspace = true
+comfy-table.workspace = true
+futures.workspace = true
+sha2.workspace = true
+tower-http = { version = "0.6", features = ["fs", "cors"] }
+
+sqlx = { version = "0.8", default-features = false, features = [
+  "runtime-tokio-rustls",
+  "sqlite",
+  "macros",
+  "migrate",
+  "chrono",
+] }
+csv = "1"
+notify = "6"
+notify-debouncer-mini = "0.4"
+encoding_rs = "0.8"
+encoding_rs_io = "0.1"
+dirs = "5"
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -11,6 +11,7 @@ members = [
   "crates/eve-pricing",
   "apps/trade-hub",
   "apps/bluey",
+  "apps/intel",
 ]
 
 [workspace.package]
