@@ -1,5 +1,4 @@
--- Rename tables to match current code conventions, and create the
--- missing stock_health_daily table.
+-- Rename tables to match current code conventions.
 
 -- market_daily_agg → market_orders_daily
 ALTER TABLE market_daily_agg RENAME TO market_orders_daily;
