@@ -8,6 +8,10 @@ rust-version.workspace = true
 path = "src/lib.rs"
 
 [[bin]]
+name = "migrate"
+path = "src/bin/migrate.rs"
+
+[[bin]]
 name = "auth"
 path = "src/bin/auth.rs"
 
