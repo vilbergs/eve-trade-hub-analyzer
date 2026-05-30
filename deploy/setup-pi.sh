@@ -16,6 +16,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PATH="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
@@ -52,7 +53,7 @@ build_binaries() {
 }
 
 require_root() {
-    [[ $EUID -eq 0 ]] || die "must be run as root (try: sudo $0)"
+    [[ $EUID -eq 0 ]] || die "must be run as root (try: sudo $SCRIPT_PATH)"
 }
 
 require_binaries() {
@@ -140,7 +141,7 @@ main() {
     if [[ $EUID -ne 0 ]]; then
         log "re-running as root for install"
         exec sudo --preserve-env=BIN_DIR,SERVICE_USER,SERVICE_HOME,ETC_DIR \
-            "$0" --no-build
+            "$SCRIPT_PATH" --no-build
     fi
     require_binaries
     ensure_user
